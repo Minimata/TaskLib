@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include "gtest/gtest.h"
-
 #include "Task.h"
 
 #include <memory>
@@ -53,6 +51,5 @@ namespace TaskLib {
     private:
         std::unordered_map<TaskID, std::unique_ptr<Task>> m_tasks;
     };
-    
 }
 
