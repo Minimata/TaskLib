@@ -17,11 +17,31 @@ float Identity(float i) {
     return i;
 }
 
-TEST(CreateTaskTest, CompatibleFunctions) {
-    TaskLib::TaskManager taskManager;
+class TaskManagerFixture: public ::testing::Test {
+protected:
+    TaskManagerFixture() : taskManager() {
+        // initialization code here
+    }
     
+    void SetUp( ) {
+        // code here will execute just before the test ensues
+    }
+    
+    void TearDown( ) {
+        // code here will be called just after the test completes
+        // ok to through exceptions from here if need be
+    }
+    
+    ~TaskManagerFixture( )  {
+        // cleanup any pending stuff, but no exceptions allowed
+    }
+    
+    // put in any custom data members that you need
+    TaskLib::TaskManager taskManager;
+};
+
+TEST_F(TaskManagerFixture, CreateTask) {
     // With lambda
-    int i = 42;
     // EXPECT_GT(-1, taskManager.createTask([i](){return i;}));
     
     // With input and output parameters
@@ -30,3 +50,4 @@ TEST(CreateTaskTest, CompatibleFunctions) {
     //EXPECT_LE(0, taskManager.createTask(ReturnFunction));
     //EXPECT_LE(0, taskManager.createTask(Identity));
 }
+
