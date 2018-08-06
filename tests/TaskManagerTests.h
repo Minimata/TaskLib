@@ -8,46 +8,79 @@
 #include "gtest/gtest.h"
 #include "../src/TaskManager.h"
 
+#include <chrono>
+#include <thread>
+#include "../thread/mingw.thread.h"
+
 void NothingFunction() { }
-void InputFunction(int i) { }
-int ReturnFunction() {
-    return 0;
-}
-float Identity(float i) {
-    return i;
-}
 
 class TaskManagerFixture: public ::testing::Test {
 protected:
+    // put in any custom data members that you need
+    TaskLib::TaskManager taskManager;
+    TaskLib::TaskID taskID;
+    TaskLib::TaskID quickTaskID;
+    
     TaskManagerFixture() : taskManager() {
-        // initialization code here
+        taskID = taskManager.createTask([](){
+            std::cout << "Subroutine started." << std::endl;
+            int i = INT32_MAX;
+            while(i > 0) i--;
+            std::cout << "Subroutine ended." << std::endl;
+        });
+        quickTaskID = taskManager.createTask([](){});
+    }
+    ~TaskManagerFixture( )  {
+        // cleanup any pending stuff, but no exceptions allowed
     }
     
     void SetUp( ) {
         // code here will execute just before the test ensues
     }
-    
     void TearDown( ) {
         // code here will be called just after the test completes
         // ok to through exceptions from here if need be
     }
     
-    ~TaskManagerFixture( )  {
-        // cleanup any pending stuff, but no exceptions allowed
+    TaskLib::State startTasks() {
+        taskManager.startAllTasks();
+        return taskManager.statusOfTask(taskID);
+    }
+    TaskLib::State pauseTasks() {
+        taskManager.startAllTasks();
+        taskManager.pauseAllTasks();
+        return taskManager.statusOfTask(taskID);
+    }
+    TaskLib::State resumeTasks() {
+        taskManager.startAllTasks();
+        taskManager.pauseAllTasks();
+        taskManager.resumeAllTasks();
+        return taskManager.statusOfTask(taskID);
+    }
+    TaskLib::State stopTasks() {
+        taskManager.startAllTasks();
+        taskManager.stopAllTasks();
+        return taskManager.statusOfTask(taskID);
+    }
+    TaskLib::State taskCompleted() {
+        taskManager.startAllTasks();
+        std::thread x;
+        std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+        return taskManager.statusOfTask(quickTaskID);
     }
     
-    // put in any custom data members that you need
-    TaskLib::TaskManager taskManager;
 };
 
 TEST_F(TaskManagerFixture, CreateTask) {
-    // With lambda
-    // EXPECT_GT(-1, taskManager.createTask([i](){return i;}));
-    
-    // With input and output parameters
     EXPECT_LE(0, taskManager.createTask(NothingFunction));
-    //EXPECT_LE(0, taskManager.createTask(InputFunction));
-    //EXPECT_LE(0, taskManager.createTask(ReturnFunction));
-    //EXPECT_LE(0, taskManager.createTask(Identity));
+}
+
+TEST_F(TaskManagerFixture, TaskStates) {
+    EXPECT_EQ(TaskLib::paused, taskManager.statusOfTask(taskID));
+    EXPECT_EQ(TaskLib::running, startTasks());
+    EXPECT_EQ(TaskLib::paused, pauseTasks());
+    EXPECT_EQ(TaskLib::running, resumeTasks());
+    EXPECT_EQ(TaskLib::stopped, stopTasks());
+    EXPECT_EQ(TaskLib::completed, taskCompleted());
 }
 

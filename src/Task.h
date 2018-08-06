@@ -6,6 +6,8 @@
 
 #include <functional>
 #include <iostream>
+#include <thread>
+// #include "../thread/mingw.thread.h"
 
 namespace TaskLib {
     
@@ -34,10 +36,11 @@ namespace TaskLib {
             return m_state;
         }
         
-        void start() {std::cout << "start task " << m_taskID << std::endl; m_state = running;}
-        void pause() {std::cout << "pause task " << m_taskID << std::endl; m_state = paused;}
-        void resume() {std::cout << "resume task " << m_taskID << std::endl; m_state = running;}
-        void stop() {std::cout << "stop task " << m_taskID << std::endl; m_state = stopped;}
+        void start() {
+        }
+        void pause() {}
+        void resume() {}
+        void stop() {}
     
     private:
         TaskID m_taskID;

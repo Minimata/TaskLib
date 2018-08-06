@@ -47,6 +47,10 @@ namespace TaskLib {
         void stopAllTasks() {
             for (const auto& task : m_tasks) task.second->stop();
         }
+        
+        State statusOfTask(TaskID id) {
+            return m_tasks.at(id)->getState();
+        }
     
     private:
         std::unordered_map<TaskID, std::unique_ptr<Task>> m_tasks;
