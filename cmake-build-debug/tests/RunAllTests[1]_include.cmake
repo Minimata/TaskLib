@@ -1,0 +1,5 @@
+if(EXISTS "D:/Projects/CPP/TaskLib/cmake-build-debug/tests/RunAllTests[1]_tests.cmake")
+  include("D:/Projects/CPP/TaskLib/cmake-build-debug/tests/RunAllTests[1]_tests.cmake")
+else()
+  add_test(RunAllTests_NOT_BUILT RunAllTests_NOT_BUILT)
+endif()

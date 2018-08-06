@@ -3,6 +3,7 @@
 //
 
 #include "gtest/gtest.h"
+#include "TaskManagerTests.h"
 
 
 int main(int argc, char **argv) {
