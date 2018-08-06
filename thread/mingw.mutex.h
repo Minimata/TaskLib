@@ -297,9 +297,9 @@ class recursive_timed_mutex
         case WAIT_OBJECT_0:
             return true;
         case WAIT_ABANDONED:
-            throw system_error(make_error_code(errc::owner_dead));
+            throw system_error(make_error_code(errc::interrupted));  // Changed errc::owner_dead to this because of MinGW
         default:
-            throw system_error(make_error_code(errc::protocol_error));
+            throw system_error(make_error_code(errc::executable_format_error));  // Changed errc::protocol error to this because of MinGW
         }
     }
 protected:

@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     std::cout << "Task manager created" << std::endl;
     auto myFirstTaskID = taskManager.createTask([](){
         std::cout << "Subroutine started." << std::endl;
-        int i = INT32_MAX;
+        int i = 20;
         while(i > 0) i--;
         std::cout << "Subroutine ended." << std::endl;
     });

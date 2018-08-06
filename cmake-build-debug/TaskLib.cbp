@@ -373,6 +373,9 @@
 		<Unit filename="D:/Projects/CPP/TaskLib/tests/TaskManagerTests.h">
 			<Option target="RunAllTests"/>
 		</Unit>
+		<Unit filename="D:/Projects/CPP/TaskLib/tests/TaskTests.h">
+			<Option target="RunAllTests"/>
+		</Unit>
 		<Unit filename="D:/Projects/CPP/TaskLib/tests/googletest/googlemock/src/gmock-all.cc">
 			<Option target="gmock"/>
 		</Unit>

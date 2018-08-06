@@ -58,6 +58,9 @@
 #include <windows.h>
 #endif
 
+// For CHAR_BIT
+#include <climits>
+
 namespace mingw_stdthread
 {
 //  Define a portable atomics-based shared_mutex

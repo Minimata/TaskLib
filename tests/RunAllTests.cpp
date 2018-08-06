@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "TaskManagerTests.h"
-
+#include "TaskTests.h"
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
