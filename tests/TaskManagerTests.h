@@ -25,8 +25,8 @@ TEST(CreateTaskTest, CompatibleFunctions) {
     // EXPECT_GT(-1, taskManager.createTask([i](){return i;}));
     
     // With input and output parameters
-    EXPECT_GT(-1, taskManager.createTask(NothingFunction));
-    //EXPECT_GT(-1, taskManager.createTask(InputFunction));
-    //EXPECT_GT(-1, taskManager.createTask(ReturnFunction));
-    //EXPECT_GT(-1, taskManager.createTask(Identity));
+    EXPECT_LE(0, taskManager.createTask(NothingFunction));
+    //EXPECT_LE(0, taskManager.createTask(InputFunction));
+    //EXPECT_LE(0, taskManager.createTask(ReturnFunction));
+    //EXPECT_LE(0, taskManager.createTask(Identity));
 }
