@@ -27,16 +27,23 @@ namespace TaskLib {
     };
     const State STARTING_STATE = paused;
     
+    void nothingFunction() {}
+    void callbackFunction() {}
+    
     class Task {
     
     public:
+        Task(TaskID id) : Task(id, nothingFunction, callbackFunction) {}
         template<typename F>
-        Task(TaskID id, F&& func) :
-            m_taskID(id),
-            m_state(STARTING_STATE),
-            m_taskToExecute(func),
-            m_asyncTask(),
-            m_threadCompleted()
+        Task(TaskID id, F&& func) : Task(id, func, callbackFunction) {}
+        template <typename F, typename C>
+        Task(TaskID id, F&& func, C&& callback) :
+                m_taskID(id),
+                m_state(STARTING_STATE),
+                m_taskToExecute(func),
+                m_callback(callback),
+                m_asyncTask(),
+                m_threadCompleted()
             {}
         Task(const Task& other) : m_mutex()  {
             m_taskID = other.m_taskID;
@@ -55,7 +62,7 @@ namespace TaskLib {
             std::swap(m_taskID, other.m_taskID);
             std::swap(m_taskToExecute, other.m_taskToExecute);
             
-            m_state = paused;
+            m_state = STARTING_STATE;
             m_asyncTask = std::thread();
             m_threadCompleted = std::thread();
         }
@@ -67,12 +74,18 @@ namespace TaskLib {
             return m_state;
         }
         
+        template <typename F>
+        void setAsyncTask(F func) {m_asyncTask = func;}
+        template <typename C>
+        void setCallback(C cb) {m_callback = cb;}
+        
         void start() {
             if(m_state == paused) {
                 m_asyncTask = std::thread(m_taskToExecute);
                 m_threadCompleted = std::thread([this]() {
                     if (m_asyncTask.joinable()) m_asyncTask.join();
                     atomic_setState(completed);
+                    m_callback();
                 });
                 atomic_setState(running);
             }
@@ -113,6 +126,7 @@ namespace TaskLib {
         TaskID m_taskID;
         State m_state;
         std::function<void()> m_taskToExecute;  /// constraining
+        std::function<void()> m_callback;  /// constraining
         
         std::thread m_asyncTask;
         std::thread m_threadCompleted;

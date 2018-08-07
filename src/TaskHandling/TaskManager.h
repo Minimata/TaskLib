@@ -24,14 +24,21 @@ namespace TaskLib {
         }
         ~TaskManager() = default;
         
+        TaskID createTask() {
+            return createTask([](){}, [](){});
+        }
         template<typename F>
         TaskID createTask(F&& func) {
+            return createTask(func, [](){});
+        }
+        template <typename F, typename C>
+        TaskID createTask(F&& func, C&& callback) {
             // Generate a random and unique ID
             auto taskID = TaskID{rand()};
             while(m_tasks.find(taskID) != m_tasks.end()) taskID = TaskID{rand()};
-            
+    
             // Store the task right in the map
-            m_tasks.emplace(std::make_pair(taskID, CPP11Helpers::make_unique<Task>(taskID, func)));
+            m_tasks.emplace(std::make_pair(taskID, CPP11Helpers::make_unique<Task>(taskID, func, callback)));
             return taskID;
         }
     

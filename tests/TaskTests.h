@@ -24,7 +24,8 @@ namespace TaskLib {
         
             TaskFixture() :
                 m_task( 0, [](){ int i = INT32_MAX; while(i > 0) i--; } ),
-                m_quickTask( 1, [](){} )
+                m_quickTask( 1, [](){} ),
+                m_callbackTask ( 2, [](){}, [](){return 0;} )
                 {}
         
             ~TaskFixture() = default;  // cleanup any pending stuff, but no exceptions allowed
@@ -32,6 +33,7 @@ namespace TaskLib {
             void SetUp() {
                 m_task = Task{ 0, [](){ int i = INT32_MAX; while(i > 0) i--; } };
                 m_quickTask = Task{ 1, [](){} };
+                m_callbackTask = Task { 2, [](){}, [](){return 1;} };
             }
             void TearDown() {
                 m_task.stop();
@@ -48,6 +50,7 @@ namespace TaskLib {
         
             Task m_task;
             Task m_quickTask;
+            Task m_callbackTask;
         };
         
         TEST_F(TaskFixture, ValidStateChanges) {

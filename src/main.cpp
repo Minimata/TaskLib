@@ -11,11 +11,13 @@ int main(int argc, char** argv) {
     TaskLib::TaskManager taskManager;
     
     auto myFirstTaskID = taskManager.createTask([](){
+        std::cout << std::endl;
         std::cout << "Subroutine started." << std::endl;
         int i = INT32_MAX;
-        while(i > 0) i--;
-        std::cout << "Subroutine ended." << std::endl;
-    });
+        while(i > 0) {
+            i--;
+        }
+    }, [](){ std::cout << "Subroutine ended." << std::endl; });
     
     bool canContinue = true;
     std::unordered_map<std::string, std::function<void ()>> actions = {
