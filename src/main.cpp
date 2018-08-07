@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include "TaskManager.h"
+#include "TaskHandling/TaskManager.h"
 
 #include <unordered_map>
 #include <string>
@@ -10,14 +10,12 @@ int main(int argc, char** argv) {
     
     TaskLib::TaskManager taskManager;
     
-    std::cout << "Task manager created" << std::endl;
     auto myFirstTaskID = taskManager.createTask([](){
         std::cout << "Subroutine started." << std::endl;
-        int i = 20;
+        int i = INT32_MAX;
         while(i > 0) i--;
         std::cout << "Subroutine ended." << std::endl;
     });
-    std::cout << "Task created : " << myFirstTaskID << std::endl;
     
     bool canContinue = true;
     std::unordered_map<std::string, std::function<void ()>> actions = {

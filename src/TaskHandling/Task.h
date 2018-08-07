@@ -9,11 +9,11 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
-#include <condition_variable>
-#include "../thread/mingw.thread.h"
-#include "../thread/mingw.condition_variable.h"
-#include "../thread/mingw.mutex.h"
-// #include "../thread/mingw.shared_mutex.h"
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#include "../../thread/mingw.thread.h"
+#include "../../thread/mingw.mutex.h"
+#endif
 
 namespace TaskLib {
     
@@ -59,16 +59,26 @@ namespace TaskLib {
             });
             atomic_setState(running);
         }
+        void stop() {
+            if(m_asyncTask.joinable()) m_asyncTask.detach();
+            if(m_threadCompleted.joinable()) m_threadCompleted.detach();
+            atomic_setState(stopped);
+        }
+        
+        /**
+         * From what I read, it's impossible and not wanted to pause and resume a thread in which we have no access.
+         * If the user wants to pause and resume his threads from another thread, he must use condition variables or
+         * future / promises.
+         * In my case, since I take any function as an argument to give to a thread, I have no way to implement this
+         * pause / resume mechanism without executing all of the function at once.
+         * Hence, the "pause / resume" mechanic is just a stop with a restart.
+         */
         void pause() {
+            stop();
             atomic_setState(paused);
         }
         void resume() {
-            atomic_setState(running);
-        }
-        void stop() {
-            atomic_setState(stopped);
-            m_asyncTask.detach();
-            m_threadCompleted.detach();
+            start();
         }
     
     private:
@@ -85,7 +95,6 @@ namespace TaskLib {
         std::thread m_asyncTask;
         std::thread m_threadCompleted;
         std::mutex m_mutex;
-        std::condition_variable conditionVariable;
     };
 }
 

@@ -6,11 +6,14 @@
 
 
 #include "gtest/gtest.h"
-#include "../src/TaskManager.h"
+#include "../src/TaskHandling/TaskManager.h"
 
 #include <chrono>
 #include <thread>
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "../thread/mingw.thread.h"
+#endif
 
 
 namespace TaskLib {

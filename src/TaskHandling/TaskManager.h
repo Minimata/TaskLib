@@ -5,6 +5,7 @@
 #pragma once
 
 #include "Task.h"
+#include "../Utils/CPP11Helpers.h"
 
 #include <memory>
 #include <unordered_map>
@@ -30,7 +31,7 @@ namespace TaskLib {
             while(m_tasks.find(taskID) != m_tasks.end()) taskID = TaskID{rand()};
             
             // Store the task right in the map
-            m_tasks.emplace(std::make_pair(taskID, std::make_unique<Task>(taskID, func)));
+            m_tasks.emplace(std::make_pair(taskID, CPP11Helpers::make_unique<Task>(taskID, func)));
             return taskID;
         }
     
