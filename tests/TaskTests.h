@@ -23,14 +23,15 @@ namespace TaskLib {
             // put in any custom data members that you need
         
             TaskFixture() :
-                m_task( 0, [](){ int i = 20; while(i > 0) i--; } ),
+                m_task( 0, [](){ int i = INT32_MAX; while(i > 0) i--; } ),
                 m_quickTask( 1, [](){} )
                 {}
         
             ~TaskFixture() = default;  // cleanup any pending stuff, but no exceptions allowed
         
             void SetUp() {
-                // code here will execute just before the test ensues
+                m_task = Task{ 0, [](){ int i = INT32_MAX; while(i > 0) i--; } };
+                m_quickTask = Task{ 1, [](){} };
             }
             void TearDown() {
                 // code here will be called just after the test completes
@@ -52,15 +53,14 @@ namespace TaskLib {
         TEST_F(TaskFixture, ValidStateChanges) {
             EXPECT_EQ(paused, m_task.getState());
             EXPECT_EQ(running, [this](){m_task.start(); return m_task.getState();}());
-            EXPECT_EQ(paused, [this](){m_task.stop(); m_task.start(); m_task.pause(); return m_task.getState();}());
+            EXPECT_EQ(paused, [this](){m_task.start(); m_task.pause(); return m_task.getState();}());
             EXPECT_EQ(running, [this](){
-                m_task.stop();
                 m_task.start();
                 m_task.pause();
                 m_task.resume();
                 return m_task.getState();
             }());
-            EXPECT_EQ(stopped, [this](){m_task.stop(); m_task.start(); m_task.stop(); return m_task.getState();}());
+            EXPECT_EQ(stopped, [this](){m_task.start(); m_task.stop(); return m_task.getState();}());
             EXPECT_EQ(completed, quickTaskTest([](){}));
         }
         

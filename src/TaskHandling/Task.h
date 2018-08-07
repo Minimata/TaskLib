@@ -38,10 +38,26 @@ namespace TaskLib {
             m_asyncTask(),
             m_threadCompleted()
             {}
-        
+        Task(const Task& other)  {
+            m_taskID = other.m_taskID;
+            m_taskToExecute = other.m_taskToExecute;
+            
+            m_state = paused;
+            m_asyncTask = std::thread();
+            m_threadCompleted = std::thread();
+        }
         ~Task() {
             if(m_asyncTask.joinable()) m_asyncTask.join();
             if(m_threadCompleted.joinable()) m_threadCompleted.join();
+        }
+        
+        Task& operator=(Task other) {
+            std::swap(m_taskID, other.m_taskID);
+            std::swap(m_taskToExecute, other.m_taskToExecute);
+            
+            m_state = paused;
+            m_asyncTask = std::thread();
+            m_threadCompleted = std::thread();
         }
         
         TaskID getID() {
@@ -52,17 +68,21 @@ namespace TaskLib {
         }
         
         void start() {
-            m_asyncTask = std::thread(m_taskToExecute);
-            m_threadCompleted = std::thread([this]() {
-                m_asyncTask.join();
-                atomic_setState(completed);
-            });
-            atomic_setState(running);
+            if(m_state == paused) {
+                m_asyncTask = std::thread(m_taskToExecute);
+                m_threadCompleted = std::thread([this]() {
+                    m_asyncTask.join();
+                    atomic_setState(completed);
+                });
+                atomic_setState(running);
+            }
         }
         void stop() {
-            if(m_asyncTask.joinable()) m_asyncTask.detach();
-            if(m_threadCompleted.joinable()) m_threadCompleted.detach();
-            atomic_setState(stopped);
+            if(m_state==running || m_state==paused) {
+                if(m_asyncTask.joinable()) m_asyncTask.detach();
+                if(m_threadCompleted.joinable()) m_threadCompleted.detach();
+                atomic_setState(stopped);
+            }
         }
         
         /**
@@ -74,8 +94,10 @@ namespace TaskLib {
          * Hence, the "pause / resume" mechanic is just a stop with a restart.
          */
         void pause() {
-            stop();
-            atomic_setState(paused);
+            if(m_state == running) {
+                stop();
+                atomic_setState(paused);
+            }
         }
         void resume() {
             start();
