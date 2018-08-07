@@ -34,8 +34,8 @@ namespace TaskLib {
                 m_quickTask = Task{ 1, [](){} };
             }
             void TearDown() {
-                // code here will be called just after the test completes
-                // ok to through exceptions from here if need be
+                m_task.stop();
+                m_quickTask.stop();
             }
             
             template <typename F>
@@ -43,7 +43,7 @@ namespace TaskLib {
                 m_quickTask.start();
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 func();
-                return m_task.getState();
+                return m_quickTask.getState();
             }
         
             Task m_task;
@@ -65,9 +65,7 @@ namespace TaskLib {
         }
         
         TEST_F(TaskFixture, InvalidStateChanges) {
-            EXPECT_EQ(paused, [this](){m_task.stop(); return m_task.getState();}());
             EXPECT_EQ(paused, [this](){m_task.pause(); return m_task.getState();}());
-            EXPECT_EQ(paused, [this](){m_task.resume(); return m_task.getState();}());
         
             EXPECT_EQ(running, [this](){m_task.start(); m_task.resume(); return m_task.getState();}());
             EXPECT_EQ(running, [this](){m_task.start(); m_task.start(); return m_task.getState();}());

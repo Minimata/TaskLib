@@ -38,7 +38,7 @@ namespace TaskLib {
             m_asyncTask(),
             m_threadCompleted()
             {}
-        Task(const Task& other)  {
+        Task(const Task& other) : m_mutex()  {
             m_taskID = other.m_taskID;
             m_taskToExecute = other.m_taskToExecute;
             
@@ -71,7 +71,7 @@ namespace TaskLib {
             if(m_state == paused) {
                 m_asyncTask = std::thread(m_taskToExecute);
                 m_threadCompleted = std::thread([this]() {
-                    m_asyncTask.join();
+                    if (m_asyncTask.joinable()) m_asyncTask.join();
                     atomic_setState(completed);
                 });
                 atomic_setState(running);
