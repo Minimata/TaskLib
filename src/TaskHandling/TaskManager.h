@@ -43,6 +43,59 @@ namespace TaskLib {
         }
     
         /// Overly repetitive
+        bool start(TaskID id) {
+            if(m_tasks.find(id) != m_tasks.end()) {
+                m_tasks.at(id)->start();
+                return true;
+            }
+            else {
+                std::cout << "No task with ID " << id << std::endl;
+                return false;
+            }
+        }
+        bool pause(TaskID id) {
+            if(m_tasks.find(id) != m_tasks.end()) {
+                m_tasks.at(id)->pause();
+                return true;
+            }
+            else {
+                std::cout << "No task with ID " << id << std::endl;
+                return false;
+            }
+        }
+        bool resume(TaskID id) {
+            if(m_tasks.find(id) != m_tasks.end()) {
+                m_tasks.at(id)->resume();
+                return true;
+            }
+            else {
+                std::cout << "No task with ID " << id << std::endl;
+                return false;
+            }
+        }
+        bool stop(TaskID id) {
+            if(m_tasks.find(id) != m_tasks.end()) {
+                m_tasks.at(id)->stop();
+                return true;
+            }
+            else {
+                std::cout << "No task with ID " << id << std::endl;
+                return false;
+            }
+        }
+        bool status(TaskID id) {
+            if(m_tasks.find(id) != m_tasks.end()) {
+                std::cout << m_tasks.at(id)->getState() << std::endl;
+                return true;
+            }
+            else {
+                std::cout << "No task with ID " << id << std::endl;
+                return false;
+            }
+        }
+    
+    
+        /// Overly repetitive
         void startAllTasks() {
             for (const auto& task : m_tasks) task.second->start();
         }
@@ -54,6 +107,11 @@ namespace TaskLib {
         }
         void stopAllTasks() {
             for (const auto& task : m_tasks) task.second->stop();
+        }
+        void printAllStatuses() {
+            for (const auto& task : m_tasks) {
+                std::cout << task.second->getID() << " : " << task.second->getState() << std::endl;
+            }
         }
         
         State statusOfTask(TaskID id) {
