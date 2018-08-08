@@ -13,6 +13,8 @@
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "../../thread/mingw.thread.h"
 #include "../../thread/mingw.mutex.h"
+#include "../Utils/CPP11Helpers.h"
+
 #endif
 
 namespace TaskLib {
@@ -29,6 +31,7 @@ namespace TaskLib {
     
     void nothingFunction() {}
     void callbackFunction() {}
+    
     
     class Task {
     

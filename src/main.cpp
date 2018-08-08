@@ -15,6 +15,7 @@
 #include "../thread/mingw.thread.h"
 #endif
 
+
 void displayHelp() {
     std::cout   << "Welcome to the TaskLib example program !\n\n\n"
     
@@ -26,7 +27,23 @@ void displayHelp() {
                 << std::endl;
 }
 
+class TaskTester {
+public:
+    void hello() { std::cout << "Hello from example" << std::endl; }
+    void printMembers() { std::cout << "i: " << m_i << ", j: " << m_j << std::endl; }
+    template<typename T>
+    void print(T in) { std:: cout << in << std::endl;}
+    
+    int getI() { return m_i; }
+    float getJ() { return m_j; }
+
+private:
+    int m_i = 42;
+    float m_j = 3.14;
+};
+
 int main(int argc, char** argv) {
+    
     
     if(argc > 1) {
         if(argv[1] == std::string("--help")) {
@@ -41,20 +58,31 @@ int main(int argc, char** argv) {
     
     TaskLib::TaskManager taskManager;
     
+    
+    std::string fib = "112358";
+    std::atomic<int> m = 0;
+    TaskTester tester;
+    taskManager.createTask([&](){tester.hello();});
+    taskManager.createTask([&](){tester.printMembers();});
+    taskManager.createTask([&](){tester.print(fib);});
+    auto id = taskManager.createTask([&](){ m.store(tester.getI()); });
+    std::cout << m.load() << std::endl;
+    taskManager.start(id);
+    
+    
     auto countdownID = taskManager.createTask([](){
         std::cout << std::endl;
         int i = 10;
         while(i > 0) {
             std::cout << i << std::endl;
             i--;
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            // std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }, [](){ std::cout << "Liftoff !" << std::endl; });
     
     auto rocketLaunchID = taskManager.createTask([&](){
-        std::cout << "Initiating countdown..." << std::endl;
-        taskManager.start(countdownID);
-    }, [](){ std::cout << "To infinity and beyond !" << std::endl; });
+        std::cout << "\nAll systems are go...\nInitiating countdown" << std::endl;
+    }, [&](){ taskManager.start(countdownID); });
     
     auto infiniteLoopID = taskManager.createTask([](){
         while(true) {}
@@ -62,18 +90,22 @@ int main(int argc, char** argv) {
     
     bool canContinue = true;
     std::unordered_map<std::string, std::function<void (int)>> actions = {
+            {"", [](int i){std::cout << std::endl;}},
             {"help", [&](int i){ displayHelp(); }},
             {"quit", [&](int i){ canContinue = false; std::cout << "Quitting..." << std::endl; taskManager.stopAllTasks(); }},
             
-            {"start", [&](int i){ if(taskManager.start(rocketLaunchID)) std::cout << rocketLaunchID << std::endl; }},
-            {"pause", [&](TaskLib::TaskID id){ if(taskManager.pause(rocketLaunchID)) std::cout << "Paused " << id << std::endl; }},
-            {"resume", [&](TaskLib::TaskID id){ if(taskManager.resume(rocketLaunchID)) std::cout << "Restarted " << id << std::endl; }},
-            {"stop", [&](TaskLib::TaskID id){ if(taskManager.stop(rocketLaunchID)) std::cout << "Stopped " << id << std::endl; }},
+            {"start", [&](TaskLib::TaskID id){
+                if (id < 0) id = rocketLaunchID;
+                if(taskManager.start(id)) std::cout << id << std::endl;
+            }},
+            {"pause", [&](TaskLib::TaskID id){ if(taskManager.pause(id)) std::cout << "Paused " << id << std::endl; }},
+            {"resume", [&](TaskLib::TaskID id){ if(taskManager.resume(id)) std::cout << "Restarted " << id << std::endl; }},
+            {"stop", [&](TaskLib::TaskID id){ if(taskManager.stop(id)) std::cout << "Stopped " << id << std::endl; }},
             {"status", [&](TaskLib::TaskID id = -1){
                 if(id < 0) {
-                    taskManager.printAllStatuses();
+                    taskManager.allStatuses();
                 }
-                else if(taskManager.statusOfTask(id)) std::cout << id << std::endl;
+                else if(taskManager.status(id)) std::cout << id << std::endl;
             }},
 
             {"startAll", [&](int i){taskManager.startAllTasks();}},
@@ -84,15 +116,18 @@ int main(int argc, char** argv) {
     
     std::string command;
     while(canContinue) {
-        std::cout << "Enter a command : ";
-        std::cin >> command;
+        std::cout << "> ";
+        std::getline(std::cin, command);
         std::cout << std::endl;
         
         std::istringstream iss(command);
         std::vector<std::string> args(std::istream_iterator<std::string>{iss},
                                       std::istream_iterator<std::string>());
         int input = -1;
-        if(args.size() > 1) input = std::stoi(args[1]);
+        if(args.size() > 1) {
+            input = std::stoi(args[1]);
+            command = args[0];
+        }
         
         if(actions.find(command) != actions.end()) actions.at(command)(input);
         else std::cout << "Unavailable command" << std::endl;

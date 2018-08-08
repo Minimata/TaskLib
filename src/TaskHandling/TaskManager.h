@@ -41,6 +41,27 @@ namespace TaskLib {
             m_tasks.emplace(std::make_pair(taskID, CPP11Helpers::make_unique<Task>(taskID, func, callback)));
             return taskID;
         }
+        
+        /**
+         * TODO
+         *
+         * General:
+         * Clean the repetitivity of the methods in this class, and stop returning ifSuccess, instead throw an exception
+         * Clean up the example main and make the tester available to the console
+         * Test what can be tested
+         *
+         * Methods:
+         * Add join and joinAll methods
+         * Add setFunction and setCallback methods
+         * Add the possibility to set Function and Callback with the start method
+         * Add removeTask and removeAllTasks methods
+         *
+         * Features:
+         * Make Tasks are chainable, for example:
+         * createTask({doThis();}, {doThatNext();}, {doThisFinally();});
+         * Make the start method return a promise
+         *
+         */
     
         /// Overly repetitive
         bool start(TaskID id) {
@@ -108,14 +129,10 @@ namespace TaskLib {
         void stopAllTasks() {
             for (const auto& task : m_tasks) task.second->stop();
         }
-        void printAllStatuses() {
+        void allStatuses() {
             for (const auto& task : m_tasks) {
                 std::cout << task.second->getID() << " : " << task.second->getState() << std::endl;
             }
-        }
-        
-        State statusOfTask(TaskID id) {
-            return m_tasks.at(id)->getState();
         }
     
     private:
