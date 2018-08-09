@@ -46,7 +46,7 @@ namespace TaskLib {
          * TODO
          *
          * General:
-         * Clean the repetitivity of the methods in this class, and stop returning ifSuccess, instead throw an exception
+         * Stop returning ifSuccess, instead throw an exception
          * Clean up the example main and make the tester available to the console
          * Test what can be tested
          *
@@ -58,65 +58,55 @@ namespace TaskLib {
          *
          * Features:
          * Make Tasks are chainable, for example:
-         * createTask({doThis();}, {doThatNext();}, {doThisFinally();});
+         * User defined Taskclasses
          * Make the start method return a promise
          *
          */
-    
-        /// Overly repetitive
-        bool start(TaskID id) {
+         
+        
+        template <typename F>
+        bool execute(F&& func, TaskID id) {
             if(m_tasks.find(id) != m_tasks.end()) {
-                m_tasks.at(id)->start();
+                func();
                 return true;
             }
             else {
                 std::cout << "No task with ID " << id << std::endl;
                 return false;
             }
+        }
+        void startTask(std::unique_ptr<Task>& task) {
+            task->start();
+        }
+        void stopTask(std::unique_ptr<Task>& task) {
+            task->stop();
+        }
+        void pauseTask(std::unique_ptr<Task>& task) {
+            task->pause();
+        }
+        void resumeTask(std::unique_ptr<Task>& task) {
+            task->resume();
+        }
+        void statusTask(std::unique_ptr<Task>& task) {
+            std::cout << task->getState() << std::endl;
+        }
+    
+        bool start(TaskID id) {
+            return execute([&id, this](){startTask(m_tasks.at(id));}, id);
         }
         bool pause(TaskID id) {
-            if(m_tasks.find(id) != m_tasks.end()) {
-                m_tasks.at(id)->pause();
-                return true;
-            }
-            else {
-                std::cout << "No task with ID " << id << std::endl;
-                return false;
-            }
+            return execute([&id, this](){pauseTask(m_tasks.at(id));}, id);
         }
         bool resume(TaskID id) {
-            if(m_tasks.find(id) != m_tasks.end()) {
-                m_tasks.at(id)->resume();
-                return true;
-            }
-            else {
-                std::cout << "No task with ID " << id << std::endl;
-                return false;
-            }
+            return execute([&id, this](){resumeTask(m_tasks.at(id));}, id);
         }
         bool stop(TaskID id) {
-            if(m_tasks.find(id) != m_tasks.end()) {
-                m_tasks.at(id)->stop();
-                return true;
-            }
-            else {
-                std::cout << "No task with ID " << id << std::endl;
-                return false;
-            }
+            return execute([&id, this](){stopTask(m_tasks.at(id));}, id);
         }
         bool status(TaskID id) {
-            if(m_tasks.find(id) != m_tasks.end()) {
-                std::cout << m_tasks.at(id)->getState() << std::endl;
-                return true;
-            }
-            else {
-                std::cout << "No task with ID " << id << std::endl;
-                return false;
-            }
+            return execute([&id, this](){statusTask(m_tasks.at(id));}, id);
         }
-    
-    
-        /// Overly repetitive
+        
         void startAllTasks() {
             for (const auto& task : m_tasks) task.second->start();
         }
@@ -130,9 +120,8 @@ namespace TaskLib {
             for (const auto& task : m_tasks) task.second->stop();
         }
         void allStatuses() {
-            for (const auto& task : m_tasks) {
+            for (const auto& task : m_tasks)
                 std::cout << task.second->getID() << " : " << task.second->getState() << std::endl;
-            }
         }
     
     private:

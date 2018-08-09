@@ -60,14 +60,14 @@ int main(int argc, char** argv) {
     
     
     std::string fib = "112358";
-    std::atomic<int> m = 0;
+    std::atomic<int> m;
+    m.store(0);
     TaskTester tester;
+    
     taskManager.createTask([&](){tester.hello();});
     taskManager.createTask([&](){tester.printMembers();});
     taskManager.createTask([&](){tester.print(fib);});
-    auto id = taskManager.createTask([&](){ m.store(tester.getI()); });
-    std::cout << m.load() << std::endl;
-    taskManager.start(id);
+    auto id = taskManager.createTask([&](){ m.store(tester.getI()); }, [&](){ std::cout << m.load() << std::endl; });
     
     
     auto countdownID = taskManager.createTask([](){
