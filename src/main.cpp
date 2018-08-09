@@ -27,6 +27,7 @@ void displayHelp() {
                 << std::endl;
 }
 
+
 class TaskTester {
 public:
     void hello() { std::cout << "Hello from example" << std::endl; }
@@ -42,9 +43,10 @@ private:
     float m_j = 3.14;
 };
 
+
 int main(int argc, char** argv) {
     
-    
+    // In case of argument
     if(argc > 1) {
         if(argv[1] == std::string("--help")) {
             displayHelp();
@@ -56,19 +58,36 @@ int main(int argc, char** argv) {
         }
     }
     
+    
     TaskLib::TaskManager taskManager;
     
-    
     std::string fib = "112358";
-    std::atomic<int> m;
-    m.store(0);
+    std::atomic<int> m(0);
     TaskTester tester;
     
     taskManager.createTask([&](){tester.hello();});
     taskManager.createTask([&](){tester.printMembers();});
     taskManager.createTask([&](){tester.print(fib);});
-    auto id = taskManager.createTask([&](){ m.store(tester.getI()); }, [&](){ std::cout << m.load() << std::endl; });
     
+    auto returnValueID = taskManager.createTask([&](){ m.store(tester.getI()); } );
+    std::cout << m << std::endl;
+    taskManager.start(returnValueID);
+    taskManager.join(returnValueID);
+    std::cout << m << std::endl;
+    
+    auto emptyTaskID = taskManager.createTask();
+    taskManager.setAsyncTask(emptyTaskID, [](){ std::cout << "Not so empty anymore... ";});
+    taskManager.setCallback(emptyTaskID, [](){ std::cout << "Is it ?" << std::endl; });
+    taskManager.start(emptyTaskID);
+    
+    auto onStartID = taskManager.createTask();
+    taskManager.start(onStartID,
+            [](){ std::cout << "Function set on start... ";},
+            [](){ std::cout << "And callback too!" << std::endl; } );
+    
+    taskManager.startAllTasks();
+    taskManager.joinAllTasks();
+    taskManager.removeAllTasks();
     
     auto countdownID = taskManager.createTask([](){
         std::cout << std::endl;
@@ -92,7 +111,11 @@ int main(int argc, char** argv) {
     std::unordered_map<std::string, std::function<void (int)>> actions = {
             {"", [](int i){std::cout << std::endl;}},
             {"help", [&](int i){ displayHelp(); }},
-            {"quit", [&](int i){ canContinue = false; std::cout << "Quitting..." << std::endl; taskManager.stopAllTasks(); }},
+            {"quit", [&](int i){
+                canContinue = false;
+                std::cout << "Quitting..." << std::endl;
+                taskManager.stopAllTasks();
+            }},
             
             {"start", [&](TaskLib::TaskID id){
                 if (id < 0) id = rocketLaunchID;
@@ -127,9 +150,17 @@ int main(int argc, char** argv) {
                     std::cerr << e.what() << std::endl;
                 }
             }},
+            {"join", [&](TaskLib::TaskID id){
+                try {
+                    taskManager.join(id); std::cout << "Waiting on " << id << std::endl;
+                }
+                catch(const std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                }
+            }},
             {"status", [&](TaskLib::TaskID id = -1){
                 if(id < 0) {
-                    taskManager.allStatuses();
+                    taskManager.statusAllTasks();
                 }
                 else {
                     try {
@@ -145,23 +176,29 @@ int main(int argc, char** argv) {
             {"pauseAll", [&](int i){taskManager.pauseAllTasks();}},
             {"resumeAll", [&](int i){taskManager.resumeAllTasks();}},
             {"stopAll", [&](int i){taskManager.stopAllTasks();}},
+            {"joinAll", [&](int i){taskManager.joinAllTasks();}},
     };
     
     std::string command;
     while(canContinue) {
+        // Waits on command and retrieves it
         std::cout << "> ";
         std::getline(std::cin, command);
         std::cout << std::endl;
         
+        // Separate command from its arguments
         std::istringstream iss(command);
         std::vector<std::string> args(std::istream_iterator<std::string>{iss},
                                       std::istream_iterator<std::string>());
+        
+        // Sets input, if any
         int input = -1;
         if(args.size() > 1) {
             input = std::stoi(args[1]);
             command = args[0];
         }
         
+        // Launch command, if valid
         if(actions.find(command) != actions.end()) actions.at(command)(input);
         else std::cout << "Unavailable command" << std::endl;
     }

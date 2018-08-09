@@ -48,50 +48,46 @@ namespace TaskLib {
         Task(TaskID id, F&& func, C&& callback) :
                 m_taskID(id),
                 m_state(STARTING_STATE),
-                m_taskToExecute(func),
+                m_asyncTask(func),
                 m_callback(callback),
-                m_asyncTask(),
+                m_asyncTaskThread(),
                 m_threadCompleted()
             {}
         Task(const Task& other) : m_mutex()  {
             m_taskID = other.m_taskID;
-            m_taskToExecute = other.m_taskToExecute;
+            m_asyncTask = other.m_asyncTask;
             
             m_state = paused;
-            m_asyncTask = std::thread();
+            m_asyncTaskThread = std::thread();
             m_threadCompleted = std::thread();
         }
         ~Task() {
-            if(m_asyncTask.joinable()) m_asyncTask.join();
+            if(m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
             if(m_threadCompleted.joinable()) m_threadCompleted.join();
         }
         
         Task& operator=(Task other) {
             std::swap(m_taskID, other.m_taskID);
-            std::swap(m_taskToExecute, other.m_taskToExecute);
+            std::swap(m_asyncTask, other.m_asyncTask);
             
             m_state = STARTING_STATE;
-            m_asyncTask = std::thread();
+            m_asyncTaskThread = std::thread();
             m_threadCompleted = std::thread();
         }
         
-        TaskID getID() {
-            return m_taskID;
-        }
-        State getState() {
-            return m_state;
-        }
+        TaskID getID() { return m_taskID; }
+        State getState() { return m_state; }
         
         template <typename F>
-        void setAsyncTask(F func) {m_asyncTask = func;}
+        void setAsyncTask(F func) { m_asyncTask = func; }
         template <typename C>
-        void setCallback(C cb) {m_callback = cb;}
+        void setCallback(C cb) { m_callback = cb; }
         
         void start() {
             if(m_state == paused) {
-                m_asyncTask = std::thread(m_taskToExecute);
+                m_asyncTaskThread = std::thread(m_asyncTask);
                 m_threadCompleted = std::thread([this]() {
-                    if (m_asyncTask.joinable()) m_asyncTask.join();
+                    if (m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
                     atomic_setState(completed);
                     m_callback();
                 });
@@ -100,12 +96,11 @@ namespace TaskLib {
         }
         void stop() {
             if(m_state==running || m_state==paused) {
-                if(m_asyncTask.joinable()) m_asyncTask.detach();
+                if(m_asyncTaskThread.joinable()) m_asyncTaskThread.detach();
                 if(m_threadCompleted.joinable()) m_threadCompleted.detach();
                 atomic_setState(stopped);
             }
         }
-        
         /**
          * From what I read, it's impossible and not wanted to pause and resume a thread in which we have no access.
          * If the user wants to pause and resume his threads from another thread, he must use condition variables or
@@ -123,6 +118,9 @@ namespace TaskLib {
         void resume() {
             start();
         }
+        void join() {
+            if (m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
+        }
     
     private:
         void atomic_setState(State s) {
@@ -133,10 +131,10 @@ namespace TaskLib {
         
         TaskID m_taskID;
         State m_state;
-        std::function<void()> m_taskToExecute;  /// constraining
-        std::function<void()> m_callback;  /// constraining
+        std::function<void()> m_asyncTask;
+        std::function<void()> m_callback;
         
-        std::thread m_asyncTask;
+        std::thread m_asyncTaskThread;
         std::thread m_threadCompleted;
         std::mutex m_mutex;
     };

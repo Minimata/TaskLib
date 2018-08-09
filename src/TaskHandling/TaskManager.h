@@ -47,52 +47,27 @@ namespace TaskLib {
          * TODO
          *
          * General:
-         * Clean up the example main and make the tester available to the console
+         * Clean up the example main
          * Test what can be tested
          *
-         * Methods:
-         * Add join and joinAll methods
-         * Add setFunction and setCallback methods
-         * Add the possibility to set Function and Callback with the start method
-         * Add removeTask and removeAllTasks methods
-         *
          * Features:
-         * Make Tasks are chainable, for example:
-         * User defined Taskclasses
+         * User defined Taskclasses and TaskID
          * Make the start method return a promise
          *
          */
-         
         
-        template <typename F>
-        void execute(F&& func, const TaskID& id) {
-            if(m_tasks.find(id) != m_tasks.end())
-                func();
-            else {
-                std::stringstream sstream;
-                sstream << "No task with id " << id;
-                throw std::runtime_error(sstream.str());
-            }
-        }
-        void startTask(std::unique_ptr<Task>& task) {
-            task->start();
-        }
-        void stopTask(std::unique_ptr<Task>& task) {
-            task->stop();
-        }
-        void pauseTask(std::unique_ptr<Task>& task) {
-            task->pause();
-        }
-        void resumeTask(std::unique_ptr<Task>& task) {
-            task->resume();
-        }
-        void statusTask(std::unique_ptr<Task>& task) {
-            std::cout << stateToString(task->getState()) << std::endl;
-        }
-    
         void start(const TaskID& id) {
             execute([&id, this](){startTask(m_tasks.at(id));}, id);
         }
+        template <typename F>
+        void start(const TaskID& id, F&& func) {
+            execute([&, this](){ startTask(m_tasks.at(id), func); }, id);
+        }
+        template <typename F, typename C>
+        void start(const TaskID& id, F&& func, C&& callback) {
+            execute([&, this](){ startTask(m_tasks.at(id), func, callback); }, id);
+        }
+        
         void pause(const TaskID& id) {
             execute([&id, this](){pauseTask(m_tasks.at(id));}, id);
         }
@@ -104,6 +79,21 @@ namespace TaskLib {
         }
         void status(const TaskID& id) {
             execute([&id, this](){statusTask(m_tasks.at(id));}, id);
+        }
+        void join(const TaskID& id) {
+            execute([&id, this](){joinTask(m_tasks.at(id));}, id);
+        }
+        void removeTask(const TaskID& id) {
+            execute([&id, this](){ stop(id); m_tasks.erase(id); }, id);
+        }
+    
+        template<typename F>
+        void setAsyncTask(const TaskID& id, F&& func) {
+            execute([&, this](){ setFunctionToTask(m_tasks.at(id), func); }, id);
+        }
+        template<typename F>
+        void setCallback(const TaskID& id, F&& func) {
+            execute([&, this](){ setCallbackToTask(m_tasks.at(id), func); }, id);
         }
         
         void startAllTasks() {
@@ -118,13 +108,70 @@ namespace TaskLib {
         void stopAllTasks() {
             for (const auto& task : m_tasks) task.second->stop();
         }
-        void allStatuses() {
+        void statusAllTasks() {
             for (const auto& task : m_tasks)
-                std::cout << task.second->getID() << " : " << task.second->getState() << std::endl;
+                std::cout << task.second->getID() << " : " << stateToString(task.second->getState()) << std::endl;
         }
+        void joinAllTasks() {
+            for (const auto& task : m_tasks) task.second->join();
+        }
+        void removeAllTasks() {
+            stopAllTasks();
+            m_tasks.clear();
+        }
+        
     
     private:
         std::string stateToString(const State& s) { return stateNames[s]; }
+    
+        template <typename F>
+        void execute(F&& func, const TaskID& id) {
+            if(m_tasks.find(id) != m_tasks.end())
+                func();
+            else {
+                std::stringstream sstream;
+                sstream << "No task with id " << id;
+                throw std::runtime_error(sstream.str());
+            }
+        }
+        void startTask(std::unique_ptr<Task>& task) {
+            task->start();
+        }
+        template <typename F>
+        void startTask(std::unique_ptr<Task>& task, F&& func) {
+            task->setAsyncTask(func);
+            task->start();
+        }
+        template <typename F, typename C>
+        void startTask(std::unique_ptr<Task>& task, F&& func, C&& callback) {
+            task->setAsyncTask(func);
+            task->setCallback(callback);
+            task->start();
+        }
+        void stopTask(std::unique_ptr<Task>& task) {
+            task->stop();
+        }
+        void pauseTask(std::unique_ptr<Task>& task) {
+            task->pause();
+        }
+        void resumeTask(std::unique_ptr<Task>& task) {
+            task->resume();
+        }
+        void statusTask(std::unique_ptr<Task>& task) {
+            std::cout << stateToString(task->getState()) << std::endl;
+        }
+        void joinTask(std::unique_ptr<Task>& task) {
+            task->join();
+        }
+    
+        template <typename F>
+        void setFunctionToTask(std::unique_ptr<Task>& task, F&& func) {
+            task->setAsyncTask(func);
+        }
+        template <typename F>
+        void setCallbackToTask(std::unique_ptr<Task>& task, F&& func) {
+            task->setCallback(func);
+        }
         
         std::unordered_map<TaskID, std::unique_ptr<Task>> m_tasks;
     };
