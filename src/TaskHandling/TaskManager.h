@@ -13,6 +13,7 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <sstream>
 
 namespace TaskLib {
     
@@ -46,7 +47,6 @@ namespace TaskLib {
          * TODO
          *
          * General:
-         * Stop returning ifSuccess, instead throw an exception
          * Clean up the example main and make the tester available to the console
          * Test what can be tested
          *
@@ -65,14 +65,13 @@ namespace TaskLib {
          
         
         template <typename F>
-        bool execute(F&& func, TaskID id) {
-            if(m_tasks.find(id) != m_tasks.end()) {
+        void execute(F&& func, const TaskID& id) {
+            if(m_tasks.find(id) != m_tasks.end())
                 func();
-                return true;
-            }
             else {
-                std::cout << "No task with ID " << id << std::endl;
-                return false;
+                std::stringstream sstream;
+                sstream << "No task with id " << id;
+                throw std::runtime_error(sstream.str());
             }
         }
         void startTask(std::unique_ptr<Task>& task) {
@@ -88,23 +87,23 @@ namespace TaskLib {
             task->resume();
         }
         void statusTask(std::unique_ptr<Task>& task) {
-            std::cout << task->getState() << std::endl;
+            std::cout << stateToString(task->getState()) << std::endl;
         }
     
-        bool start(TaskID id) {
-            return execute([&id, this](){startTask(m_tasks.at(id));}, id);
+        void start(const TaskID& id) {
+            execute([&id, this](){startTask(m_tasks.at(id));}, id);
         }
-        bool pause(TaskID id) {
-            return execute([&id, this](){pauseTask(m_tasks.at(id));}, id);
+        void pause(const TaskID& id) {
+            execute([&id, this](){pauseTask(m_tasks.at(id));}, id);
         }
-        bool resume(TaskID id) {
-            return execute([&id, this](){resumeTask(m_tasks.at(id));}, id);
+        void resume(const TaskID& id) {
+            execute([&id, this](){resumeTask(m_tasks.at(id));}, id);
         }
-        bool stop(TaskID id) {
-            return execute([&id, this](){stopTask(m_tasks.at(id));}, id);
+        void stop(const TaskID& id) {
+            execute([&id, this](){stopTask(m_tasks.at(id));}, id);
         }
-        bool status(TaskID id) {
-            return execute([&id, this](){statusTask(m_tasks.at(id));}, id);
+        void status(const TaskID& id) {
+            execute([&id, this](){statusTask(m_tasks.at(id));}, id);
         }
         
         void startAllTasks() {
@@ -125,6 +124,8 @@ namespace TaskLib {
         }
     
     private:
+        std::string stateToString(const State& s) { return stateNames[s]; }
+        
         std::unordered_map<TaskID, std::unique_ptr<Task>> m_tasks;
     };
 }

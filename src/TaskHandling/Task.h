@@ -28,17 +28,22 @@ namespace TaskLib {
         completed
     };
     const State STARTING_STATE = paused;
+    const std::string stateNames[] = {
+            "paused",
+            "running",
+            "stopped",
+            "completed"
+    };
     
     void nothingFunction() {}
-    void callbackFunction() {}
     
     
     class Task {
     
     public:
-        Task(TaskID id) : Task(id, nothingFunction, callbackFunction) {}
+        Task(TaskID id) : Task(id, nothingFunction, nothingFunction) {}
         template<typename F>
-        Task(TaskID id, F&& func) : Task(id, func, callbackFunction) {}
+        Task(TaskID id, F&& func) : Task(id, func, nothingFunction) {}
         template <typename F, typename C>
         Task(TaskID id, F&& func, C&& callback) :
                 m_taskID(id),

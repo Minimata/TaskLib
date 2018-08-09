@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
         while(i > 0) {
             std::cout << i << std::endl;
             i--;
-            // std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }, [](){ std::cout << "Liftoff !" << std::endl; });
     
@@ -96,16 +96,49 @@ int main(int argc, char** argv) {
             
             {"start", [&](TaskLib::TaskID id){
                 if (id < 0) id = rocketLaunchID;
-                if(taskManager.start(id)) std::cout << id << std::endl;
+                try {
+                    taskManager.start(id); std::cout << id << std::endl;
+                }
+                catch(const std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                }
             }},
-            {"pause", [&](TaskLib::TaskID id){ if(taskManager.pause(id)) std::cout << "Paused " << id << std::endl; }},
-            {"resume", [&](TaskLib::TaskID id){ if(taskManager.resume(id)) std::cout << "Restarted " << id << std::endl; }},
-            {"stop", [&](TaskLib::TaskID id){ if(taskManager.stop(id)) std::cout << "Stopped " << id << std::endl; }},
+            {"pause", [&](TaskLib::TaskID id){
+                try {
+                    taskManager.pause(id); std::cout << "Paused " << id << std::endl;
+                }
+                catch(const std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                }
+            }},
+            {"resume", [&](TaskLib::TaskID id){
+                try {
+                    taskManager.resume(id); std::cout << "Resume " << id << std::endl;
+                }
+                catch(const std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                }
+            }},
+            {"stop", [&](TaskLib::TaskID id){
+                try {
+                    taskManager.stop(id); std::cout << "Resume " << id << std::endl;
+                }
+                catch(const std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                }
+            }},
             {"status", [&](TaskLib::TaskID id = -1){
                 if(id < 0) {
                     taskManager.allStatuses();
                 }
-                else if(taskManager.status(id)) std::cout << id << std::endl;
+                else {
+                    try {
+                        taskManager.status(id);
+                    }
+                    catch (const std::runtime_error &e) {
+                        std::cerr << e.what() << std::endl;
+                    }
+                }
             }},
 
             {"startAll", [&](int i){taskManager.startAllTasks();}},
