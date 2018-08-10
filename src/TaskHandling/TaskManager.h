@@ -68,6 +68,7 @@ namespace TaskLib {
         void start(const TaskID& id) {
             execute([&id, this](){startTask(m_tasks.at(id));}, id);
         }
+        /**
         template <typename F>
         void start(const TaskID& id, F&& func) {
             execute([&, this](){ startTask(m_tasks.at(id), func); }, id);
@@ -76,6 +77,7 @@ namespace TaskLib {
         void start(const TaskID& id, F&& func, C&& callback) {
             execute([&, this](){ startTask(m_tasks.at(id), func, callback); }, id);
         }
+         */
         
         void pause(const TaskID& id) {
             execute([&id, this](){pauseTask(m_tasks.at(id));}, id);
@@ -96,6 +98,7 @@ namespace TaskLib {
             execute([&id, this](){ stop(id); m_tasks.erase(id); }, id);
         }
     
+        /**
         template<typename F>
         void setAsyncTask(const TaskID& id, F&& func) {
             execute([&, this](){ setFunctionToTask(m_tasks.at(id), func); }, id);
@@ -104,6 +107,7 @@ namespace TaskLib {
         void setCallback(const TaskID& id, F&& func) {
             execute([&, this](){ setCallbackToTask(m_tasks.at(id), func); }, id);
         }
+        */
         
         void startAllTasks() {
             for (const auto& task : m_tasks) task.second->start();
@@ -119,7 +123,7 @@ namespace TaskLib {
         }
         void statusAllTasks() {
             for (const auto& task : m_tasks)
-                std::cout << task.second->getID() << " : " << stateToString(task.second->getState()) << std::endl;
+                std::cout << task.first << " : " << stateToString(task.second->getState()) << std::endl;
         }
         void joinAllTasks() {
             for (const auto& task : m_tasks) task.second->join();
@@ -146,6 +150,7 @@ namespace TaskLib {
         void startTask(std::unique_ptr<Task>& task) {
             task->start();
         }
+        /**
         template <typename F>
         void startTask(std::unique_ptr<Task>& task, F&& func) {
             task->setAsyncTask(func);
@@ -157,6 +162,7 @@ namespace TaskLib {
             task->setCallback(callback);
             task->start();
         }
+        */
         void stopTask(std::unique_ptr<Task>& task) {
             task->stop();
         }
@@ -173,6 +179,7 @@ namespace TaskLib {
             task->join();
         }
     
+        /**
         template <typename F>
         void setFunctionToTask(std::unique_ptr<Task>& task, F&& func) {
             task->setAsyncTask(func);
@@ -181,7 +188,7 @@ namespace TaskLib {
         void setCallbackToTask(std::unique_ptr<Task>& task, F&& func) {
             task->setCallback(func);
         }
-        
+        */
         std::unordered_map<TaskID, std::unique_ptr<Task>> m_tasks;
     };
 }

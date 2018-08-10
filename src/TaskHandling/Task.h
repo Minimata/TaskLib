@@ -33,12 +33,28 @@ namespace TaskLib {
             "completed"
     };
     
-    void nothingFunction() {}
+    using DefaultTaskType = std::string;
     
+    void nothingFunction() {}
     
     
     class Task {
     public:
+        // TaskType is undefined
+        template <typename TaskID>
+        explicit Task(TaskID id) : Task(std::move(id), DefaultTaskType(), nothingFunction, nothingFunction) {}
+        template <typename TaskID, typename F>
+        Task(TaskID id, F&& func) : Task(std::move(id), DefaultTaskType(), func, nothingFunction) {}
+        template <typename TaskID, typename F, typename C>
+        Task(TaskID id, F&& func, C&& callback) : Task(std::move(id), DefaultTaskType(), func, callback){}
+    
+        //TaskType is defined
+        template <typename TaskID, typename TaskType>
+        Task(TaskID id, TaskType type) : Task(std::move(id), std::move(type), nothingFunction, nothingFunction) {}
+        template <typename TaskID, typename TaskType, typename F>
+        Task(TaskID id, TaskType type, F&& func) : Task(std::move(id), std::move(type), func, nothingFunction) {}
+        
+        // Mother of all constructors
         template <typename TaskID, typename TaskType, typename F, typename C>
         Task(TaskID x, TaskType t, F&& func, C&& cb) :
                 m_self(CPP11Helpers::make_unique<TTask<TaskID, TaskType>>(
@@ -47,11 +63,14 @@ namespace TaskLib {
                     func,
                     cb) ) {}
         
+        
         void start() { m_self->start(); }
         void stop() { m_self->stop(); }
         void pause() { m_self->pause(); }
         void resume() { m_self->resume(); }
         void join() { m_self->join(); }
+        
+        State getState() { return m_self->getState(); }
     
     private:
     
@@ -64,47 +83,35 @@ namespace TaskLib {
             virtual void resume() = 0;
             virtual void join() = 0;
             
-        private:
-        
+            
+            virtual State getState() { return m_state; }
+            
+        protected:
+            std::function<void()> m_asyncTask;
+            std::function<void()> m_callback;
+            State m_state;
         };
         
         
         template <typename TaskID, typename TaskType>
         struct TTask final : ConceptTask {
-            /**
-            template <typename F, typename C>
-            Task(TaskID x, TaskType t, F&& func, C&& cb) :
-                m_taskID(std::move(x)),
-                m_taskType(std::move(t)),
-                m_asyncTask(func),
-                m_callback(cb)
-                {}
-                */
         
         public:
-            // TaskType is undefined
-            explicit TTask(const TaskID& id) : TTask(id, TaskType(), nothingFunction, nothingFunction) {}
-            template<typename F>
-            TTask(const TaskID& id, F&& func) : TTask(id, TaskType(), func, nothingFunction) {}
             template <typename F, typename C>
-            TTask(const TaskID& id, F&& func, C&& callback) : TTask(id, TaskType(), func, callback){}
-            
-            //TaskType is defined
-            TTask(const TaskID& id, const TaskType& type) : TTask(id, type, nothingFunction, nothingFunction) {}
-            template<typename F>
-            TTask(const TaskID& id, const TaskType& type, F&& func) : TTask(id, type, func, nothingFunction) {}
-            
-            // Mother of all constructors
-            template <typename F, typename C>
-            TTask(const TaskID& id, const TaskType& type, F&& func, C&& callback) :
-                    m_taskID(id),
-                    m_taskType(type),
+            TTask(TaskID id, TaskType type, F&& func, C&& callback) :
+                    m_taskID(std::move(id)),
+                    m_taskType(std::move(type)),
                     m_state(STARTING_STATE),
                     m_asyncTask(func),
                     m_callback(callback),
                     m_asyncTaskThread(),
                     m_threadCompleted()
             {}
+            ~TTask() override {
+                if(m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
+                if(m_threadCompleted.joinable()) m_threadCompleted.join();
+            }
+    
     
             TTask(const TTask& other) : m_mutex()  {
                 m_taskID = other.m_taskID;
@@ -115,12 +122,7 @@ namespace TaskLib {
                 m_asyncTaskThread = std::thread();
                 m_threadCompleted = std::thread();
             }
-            ~TTask() {
-                if(m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
-                if(m_threadCompleted.joinable()) m_threadCompleted.join();
-            }
-            
-            Task& operator=(TTask other) {
+            TTask& operator=(TTask other) {
                 std::swap(m_taskID, other.m_taskID);
                 std::swap(m_asyncTask, other.m_asyncTask);
                 
@@ -128,16 +130,6 @@ namespace TaskLib {
                 m_asyncTaskThread = std::thread();
                 m_threadCompleted = std::thread();
             }
-            
-            TaskID getID() { return m_taskID; }
-            State getState() { return m_state; }
-            TaskType getType() { return m_taskType; }
-            void setType(TaskType type) { m_taskType = type; }
-            
-            template <typename F>
-            void setAsyncTask(F func) { m_asyncTask = func; }
-            template <typename C>
-            void setCallback(C cb) { m_callback = cb; }
             
             void start() override {
                 if(m_state == paused) {
@@ -179,13 +171,14 @@ namespace TaskLib {
             
             TaskID m_taskID;
             TaskType m_taskType;
-            std::function<void()> m_asyncTask;
-            std::function<void()> m_callback;
         
-            State m_state;
             std::thread m_asyncTaskThread;
             std::thread m_threadCompleted;
             std::mutex m_mutex;
+    
+            std::function<void()> m_asyncTask;
+            std::function<void()> m_callback;
+            State m_state;
         };
         
         std::unique_ptr<ConceptTask> m_self;

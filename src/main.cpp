@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     taskManager.removeAllTasks();
      */
      
-    TaskLib::TTask task(0, "test", [](){ std::cout << "Hello" << std::endl; }, [](){ std::cout << "Goodbye" << std::endl; });
+    TaskLib::Task task(0, "test", [](){ std::cout << "Hello" << std::endl; }, [](){ std::cout << "Goodbye" << std::endl; });
     task.start();
     task.stop();
     
