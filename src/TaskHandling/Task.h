@@ -19,8 +19,6 @@
 
 namespace TaskLib {
     
-    using TaskID = int;
-    
     enum State {
         paused,
         running,
@@ -38,105 +36,160 @@ namespace TaskLib {
     void nothingFunction() {}
     
     
-    class Task {
     
+    class Task {
     public:
-        Task(TaskID id) : Task(id, nothingFunction, nothingFunction) {}
-        template<typename F>
-        Task(TaskID id, F&& func) : Task(id, func, nothingFunction) {}
-        template <typename F, typename C>
-        Task(TaskID id, F&& func, C&& callback) :
-                m_taskID(id),
-                m_state(STARTING_STATE),
-                m_asyncTask(func),
-                m_callback(callback),
-                m_asyncTaskThread(),
-                m_threadCompleted()
-            {}
-        Task(const Task& other) : m_mutex()  {
-            m_taskID = other.m_taskID;
-            m_asyncTask = other.m_asyncTask;
-            
-            m_state = paused;
-            m_asyncTaskThread = std::thread();
-            m_threadCompleted = std::thread();
-        }
-        ~Task() {
-            if(m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
-            if(m_threadCompleted.joinable()) m_threadCompleted.join();
-        }
+        template <typename TaskID, typename TaskType, typename F, typename C>
+        Task(TaskID x, TaskType t, F&& func, C&& cb) :
+                m_self(CPP11Helpers::make_unique<TTask<TaskID, TaskType>>(
+                    std::move(x),
+                    std::move(t),
+                    func,
+                    cb) ) {}
         
-        Task& operator=(Task other) {
-            std::swap(m_taskID, other.m_taskID);
-            std::swap(m_asyncTask, other.m_asyncTask);
-            
-            m_state = STARTING_STATE;
-            m_asyncTaskThread = std::thread();
-            m_threadCompleted = std::thread();
-        }
-        
-        TaskID getID() { return m_taskID; }
-        State getState() { return m_state; }
-        
-        template <typename F>
-        void setAsyncTask(F func) { m_asyncTask = func; }
-        template <typename C>
-        void setCallback(C cb) { m_callback = cb; }
-        
-        void start() {
-            if(m_state == paused) {
-                m_asyncTaskThread = std::thread(m_asyncTask);
-                m_threadCompleted = std::thread([this]() {
-                    if (m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
-                    atomic_setState(completed);
-                    m_callback();
-                });
-                atomic_setState(running);
-            }
-        }
-        void stop() {
-            if(m_state==running || m_state==paused) {
-                if(m_asyncTaskThread.joinable()) m_asyncTaskThread.detach();
-                if(m_threadCompleted.joinable()) m_threadCompleted.detach();
-                atomic_setState(stopped);
-            }
-        }
-        /**
-         * From what I read, it's impossible and not wanted to pause and resume a thread in which we have no access.
-         * If the user wants to pause and resume his threads from another thread, he must use condition variables or
-         * future / promises.
-         * In my case, since I take any function as an argument to give to a thread, I have no way to implement this
-         * pause / resume mechanism without executing all of the function at once.
-         * Hence, the "pause / resume" mechanic is just a stop with a restart.
-         */
-        void pause() {
-            if(m_state == running) {
-                stop();
-                atomic_setState(paused);
-            }
-        }
-        void resume() {
-            start();
-        }
-        void join() {
-            if (m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
-        }
+        void start() { m_self->start(); }
+        void stop() { m_self->stop(); }
+        void pause() { m_self->pause(); }
+        void resume() { m_self->resume(); }
+        void join() { m_self->join(); }
     
     private:
-        void atomic_setState(State s) {
-            m_mutex.lock();
-            m_state = s;
-            m_mutex.unlock();
-        }
+    
+        struct ConceptTask {
+        public:
+            virtual ~ConceptTask() = default;
+            virtual void start() = 0;
+            virtual void stop() = 0;
+            virtual void pause() = 0;
+            virtual void resume() = 0;
+            virtual void join() = 0;
+            
+        private:
         
-        TaskID m_taskID;
-        State m_state;
-        std::function<void()> m_asyncTask;
-        std::function<void()> m_callback;
+        };
         
-        std::thread m_asyncTaskThread;
-        std::thread m_threadCompleted;
-        std::mutex m_mutex;
+        
+        template <typename TaskID, typename TaskType>
+        struct TTask final : ConceptTask {
+            /**
+            template <typename F, typename C>
+            Task(TaskID x, TaskType t, F&& func, C&& cb) :
+                m_taskID(std::move(x)),
+                m_taskType(std::move(t)),
+                m_asyncTask(func),
+                m_callback(cb)
+                {}
+                */
+        
+        public:
+            // TaskType is undefined
+            explicit TTask(const TaskID& id) : TTask(id, TaskType(), nothingFunction, nothingFunction) {}
+            template<typename F>
+            TTask(const TaskID& id, F&& func) : TTask(id, TaskType(), func, nothingFunction) {}
+            template <typename F, typename C>
+            TTask(const TaskID& id, F&& func, C&& callback) : TTask(id, TaskType(), func, callback){}
+            
+            //TaskType is defined
+            TTask(const TaskID& id, const TaskType& type) : TTask(id, type, nothingFunction, nothingFunction) {}
+            template<typename F>
+            TTask(const TaskID& id, const TaskType& type, F&& func) : TTask(id, type, func, nothingFunction) {}
+            
+            // Mother of all constructors
+            template <typename F, typename C>
+            TTask(const TaskID& id, const TaskType& type, F&& func, C&& callback) :
+                    m_taskID(id),
+                    m_taskType(type),
+                    m_state(STARTING_STATE),
+                    m_asyncTask(func),
+                    m_callback(callback),
+                    m_asyncTaskThread(),
+                    m_threadCompleted()
+            {}
+    
+            TTask(const TTask& other) : m_mutex()  {
+                m_taskID = other.m_taskID;
+                m_taskType = other.m_taskType;
+                m_asyncTask = other.m_asyncTask;
+                
+                m_state = STARTING_STATE;
+                m_asyncTaskThread = std::thread();
+                m_threadCompleted = std::thread();
+            }
+            ~TTask() {
+                if(m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
+                if(m_threadCompleted.joinable()) m_threadCompleted.join();
+            }
+            
+            Task& operator=(TTask other) {
+                std::swap(m_taskID, other.m_taskID);
+                std::swap(m_asyncTask, other.m_asyncTask);
+                
+                m_state = STARTING_STATE;
+                m_asyncTaskThread = std::thread();
+                m_threadCompleted = std::thread();
+            }
+            
+            TaskID getID() { return m_taskID; }
+            State getState() { return m_state; }
+            TaskType getType() { return m_taskType; }
+            void setType(TaskType type) { m_taskType = type; }
+            
+            template <typename F>
+            void setAsyncTask(F func) { m_asyncTask = func; }
+            template <typename C>
+            void setCallback(C cb) { m_callback = cb; }
+            
+            void start() override {
+                if(m_state == paused) {
+                    m_asyncTaskThread = std::thread(m_asyncTask);
+                    m_threadCompleted = std::thread([this]() {
+                        if (m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
+                        atomic_setState(completed);
+                        m_callback();
+                    });
+                    atomic_setState(running);
+                }
+            }
+            void stop() override {
+                if(m_state==running || m_state==paused) {
+                    if(m_asyncTaskThread.joinable()) m_asyncTaskThread.detach();
+                    if(m_threadCompleted.joinable()) m_threadCompleted.detach();
+                    atomic_setState(stopped);
+                }
+            }
+            void pause() override {
+                if(m_state == running) {
+                    stop();
+                    atomic_setState(paused);
+                }
+            }
+            void resume() override {
+                start();
+            }
+            void join() override {
+                if (m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
+            }
+        
+        private:
+            void atomic_setState(State s) {
+                m_mutex.lock();
+                m_state = s;
+                m_mutex.unlock();
+            }
+            
+            TaskID m_taskID;
+            TaskType m_taskType;
+            std::function<void()> m_asyncTask;
+            std::function<void()> m_callback;
+        
+            State m_state;
+            std::thread m_asyncTaskThread;
+            std::thread m_threadCompleted;
+            std::mutex m_mutex;
+        };
+        
+        std::unique_ptr<ConceptTask> m_self;
+    
     };
 }
 

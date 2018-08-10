@@ -61,6 +61,8 @@ int main(int argc, char** argv) {
     
     TaskLib::TaskManager taskManager;
     
+    /**
+    
     std::string fib = "112358";
     std::atomic<int> m(0);
     TaskTester tester;
@@ -88,6 +90,11 @@ int main(int argc, char** argv) {
     taskManager.startAllTasks();
     taskManager.joinAllTasks();
     taskManager.removeAllTasks();
+     */
+     
+    TaskLib::TTask task(0, "test", [](){ std::cout << "Hello" << std::endl; }, [](){ std::cout << "Goodbye" << std::endl; });
+    task.start();
+    task.stop();
     
     auto countdownID = taskManager.createTask([](){
         std::cout << std::endl;

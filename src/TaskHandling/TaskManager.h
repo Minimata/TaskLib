@@ -17,6 +17,9 @@
 
 namespace TaskLib {
     
+    using TaskID = int;
+    const std::string DEFAULT_TYPE("NO_TYPE");
+    
     class TaskManager {
     
     public:
@@ -34,12 +37,18 @@ namespace TaskLib {
         }
         template <typename F, typename C>
         TaskID createTask(F&& func, C&& callback) {
+            return createTask(func, callback, DEFAULT_TYPE);
+        }
+        template <typename F, typename C, typename T>
+        TaskID createTask(F&& func, C&& callback, const T& type) {
             // Generate a random and unique ID
             auto taskID = TaskID{rand()};
             while(m_tasks.find(taskID) != m_tasks.end()) taskID = TaskID{rand()};
     
             // Store the task right in the map
-            m_tasks.emplace(std::make_pair(taskID, CPP11Helpers::make_unique<Task>(taskID, func, callback)));
+            m_tasks.emplace(
+                    std::make_pair(taskID,
+                            CPP11Helpers::make_unique<Task>(taskID, type, func, callback)));
             return taskID;
         }
         
