@@ -8,7 +8,6 @@
 
 namespace CPP11Helpers {
 
-    /**
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     template<typename T, typename... Args>
     std::unique_ptr<T> make_unique(Args&&... args) {
@@ -20,7 +19,7 @@ namespace CPP11Helpers {
         return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
     }
 #endif
-     */
+     /**
 
 #if __cplusplus == 199711L || __cplusplus == 201103L || __cplusplus == 1  //Check if CXX11 or lower (gcc values)
     template<typename T, typename... Args>
@@ -33,4 +32,5 @@ namespace CPP11Helpers {
         return std::make_unique<T>(std::forward<Args>(args)...);
     }
 #endif
+      */
 }
