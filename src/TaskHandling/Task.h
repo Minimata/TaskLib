@@ -9,11 +9,11 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
+#include "../Utils/CPP11Helpers.h"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "../../thread/mingw.thread.h"
 #include "../../thread/mingw.mutex.h"
-#include "../Utils/CPP11Helpers.h"
 
 #endif
 
@@ -126,8 +126,6 @@ namespace TaskLib {
         void setType(T type) { m_taskType = CPP11Helpers::make_unique<Type<T>>(std::move(type)); }
         
         /**
-         * Allow parameters of both function to be pointers so the compare function can make use of polymorphism.
-         * test the static_cast robustness and performance against dynamic_cast
          *
          * Can the start method ease the promise and future workflow (by returning one of them for example) ?
          *
