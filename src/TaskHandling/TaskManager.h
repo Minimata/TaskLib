@@ -173,6 +173,11 @@ namespace TaskLib {
             task->setCallback(func);
         }
         
+        template <typename T>
+        std::unordered_map<TaskID, std::unique_ptr<Task>> match(T type) {
+        
+        }
+        
         std::unordered_map<TaskID, std::unique_ptr<Task>> m_tasks;
     };
 }

@@ -53,19 +53,19 @@ namespace TaskLib {
                 m_asyncTaskThread(),
                 m_threadCompleted()
             {}
-        Task(const Task& other) : m_mutex()  {
-            m_taskID = other.m_taskID;
-            m_asyncTask = other.m_asyncTask;
-            
-            m_state = paused;
-            m_asyncTaskThread = std::thread();
-            m_threadCompleted = std::thread();
-        }
         ~Task() {
             if(m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
             if(m_threadCompleted.joinable()) m_threadCompleted.join();
         }
+    
+        Task(const Task& other) : m_mutex()  {
+            m_taskID = other.m_taskID;
+            m_asyncTask = other.m_asyncTask;
         
+            m_state = paused;
+            m_asyncTaskThread = std::thread();
+            m_threadCompleted = std::thread();
+        }
         Task& operator=(Task other) {
             std::swap(m_taskID, other.m_taskID);
             std::swap(m_asyncTask, other.m_asyncTask);
@@ -121,8 +121,22 @@ namespace TaskLib {
         void join() {
             if (m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
         }
+        
+        template <typename T>
+        void setType(T type) { m_taskType = CPP11Helpers::make_unique<Type<T>>(std::move(type)); }
+        template <typename T, typename F>
+        bool compareType(T type, F&& func) {
+            auto downcastType = static_cast<Type<T>*>(m_taskType.get());
+            return compareTypes<T>(downcastType, type, func);
+        };
     
     private:
+        template <typename Type, typename T1, typename F>
+        bool compareTypes(T1 taskType, Type other, F&& func) {
+            auto t1 = static_cast<Type>(taskType->m_type);
+            return func(t1, other);
+        }
+        
         void atomic_setState(State s) {
             m_mutex.lock();
             m_state = s;
@@ -137,6 +151,19 @@ namespace TaskLib {
         std::thread m_asyncTaskThread;
         std::thread m_threadCompleted;
         std::mutex m_mutex;
+    
+    
+        struct ConceptType {
+            virtual ~ConceptType() = default;
+        };
+        
+        template <typename T>
+        struct Type final : ConceptType {
+            explicit Type(T x) : m_type(std::move(x)) {}
+            T m_type;
+        };
+        
+        std::unique_ptr<ConceptType> m_taskType;
     };
 }
 

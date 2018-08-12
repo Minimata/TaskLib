@@ -61,6 +61,7 @@ int main(int argc, char** argv) {
     
     TaskLib::TaskManager taskManager;
     
+    /**
     std::string fib = "112358";
     std::atomic<int> m(0);
     TaskTester tester;
@@ -88,6 +89,16 @@ int main(int argc, char** argv) {
     taskManager.startAllTasks();
     taskManager.joinAllTasks();
     taskManager.removeAllTasks();
+     
+     */
+     
+    TaskLib::Task t1(1);
+    TaskLib::Task t2(2);
+    t1.setType(std::string("hello"));
+    t2.setType(std::string("goodbye"));
+    
+    if(t1.compareType(std::string("hello"), [](std::string s1, std::string s2){ return s1 == s2; }))
+        std::cout << "VICTORY" << std::endl;
     
     auto countdownID = taskManager.createTask([](){
         std::cout << std::endl;
