@@ -37,10 +37,17 @@ public:
     
     int getI() { return m_i; }
     float getJ() { return m_j; }
+    
+    virtual int compare() const { return 42; }
 
-private:
+protected:
     int m_i = 42;
     float m_j = 3.14;
+};
+
+class TaskChildTester : public TaskTester {
+public:
+    int compare() const override { return 64; }
 };
 
 
@@ -97,8 +104,26 @@ int main(int argc, char** argv) {
     t1.setType(std::string("hello"));
     t2.setType(std::string("goodbye"));
     
-    if(t1.compareType(std::string("hello"), [](std::string s1, std::string s2){ return s1 == s2; }))
-        std::cout << "VICTORY" << std::endl;
+    if( t1.compareType(std::string("hello"), [](std::string s1, std::string s2){ return s1 == s2; }) )
+        std::cout << "Should show" << std::endl;
+    if( t2.compareType(std::string("hello"), [](std::string s1, std::string s2){ return s1 == s2; }) )
+        std::cout << "Should not show" << std::endl;
+    
+    auto tester1 = CPP11Helpers::make_unique<TaskTester>();
+    auto tester2 = CPP11Helpers::make_unique<TaskChildTester>();
+    
+    TaskLib::Task t3(3);
+    // t3.setType(CPP11Helpers::make_unique<TaskChildTester>());
+    auto type = CPP11Helpers::make_unique<TaskChildTester>();
+    // t3.setType(type.get());
+    t3.setType(std::move(type));
+    
+    if( t3.compareType(tester1.get(), [](TaskTester* t1, TaskTester* t2){ return t1->compare() == t2->compare(); }))
+        std::cout << "Should not show again" << std::endl;
+    if( t3.compareType(tester2.get(), [](TaskTester* t1, TaskTester* t2){ return t1->compare() == t2->compare(); }))
+        std::cout << "Should show again" << std::endl;
+    
+    
     
     auto countdownID = taskManager.createTask([](){
         std::cout << std::endl;

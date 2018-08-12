@@ -124,6 +124,17 @@ namespace TaskLib {
         
         template <typename T>
         void setType(T type) { m_taskType = CPP11Helpers::make_unique<Type<T>>(std::move(type)); }
+        
+        /**
+         * Allow parameters of both function to be pointers so the compare function can make use of polymorphism.
+         * test the static_cast robustness and performance against dynamic_cast
+         *
+         * Can the start method ease the promise and future workflow (by returning one of them for example) ?
+         *
+         * Test on linux
+         * check deliverables and re-read the PDF
+         *
+         */
         template <typename T, typename F>
         bool compareType(T type, F&& func) {
             auto downcastType = static_cast<Type<T>*>(m_taskType.get());
