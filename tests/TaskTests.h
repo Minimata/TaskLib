@@ -31,9 +31,9 @@ namespace TaskLib {
             ~TaskFixture() = default;  // cleanup any pending stuff, but no exceptions allowed
         
             void SetUp() {
-                m_task = Task{ 0, [](){ int i = INT32_MAX; while(i > 0) i--; } };
-                m_quickTask = Task{ 1, [](){} };
-                m_callbackTask = Task { 2, [](){}, [](){return 1;} };
+                m_task.pause();
+                m_quickTask.pause();
+                m_callbackTask.pause();
             }
             void TearDown() {
                 m_task.stop();
