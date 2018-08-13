@@ -4,4 +4,6 @@ add_test( TaskFixture.ValidStateChanges D:/Projects/CPP/TaskLib/cmake-build-debu
 set_tests_properties( TaskFixture.ValidStateChanges PROPERTIES WORKING_DIRECTORY D:/Projects/CPP/TaskLib/cmake-build-debug/tests)
 add_test( TaskFixture.InvalidStateChanges D:/Projects/CPP/TaskLib/cmake-build-debug/tests/RunAllTests.exe [==[--gtest_filter=TaskFixture.InvalidStateChanges]==] --gtest_also_run_disabled_tests)
 set_tests_properties( TaskFixture.InvalidStateChanges PROPERTIES WORKING_DIRECTORY D:/Projects/CPP/TaskLib/cmake-build-debug/tests)
-set( RunAllTests_TESTS TaskManagerFixture.ValidCreateTask TaskFixture.ValidStateChanges TaskFixture.InvalidStateChanges)
+add_test( TaskFixture.ValidTaskTypeComparisons D:/Projects/CPP/TaskLib/cmake-build-debug/tests/RunAllTests.exe [==[--gtest_filter=TaskFixture.ValidTaskTypeComparisons]==] --gtest_also_run_disabled_tests)
+set_tests_properties( TaskFixture.ValidTaskTypeComparisons PROPERTIES WORKING_DIRECTORY D:/Projects/CPP/TaskLib/cmake-build-debug/tests)
+set( RunAllTests_TESTS TaskManagerFixture.ValidCreateTask TaskFixture.ValidStateChanges TaskFixture.InvalidStateChanges TaskFixture.ValidTaskTypeComparisons)

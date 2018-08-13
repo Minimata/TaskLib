@@ -57,9 +57,6 @@ namespace TaskLib {
          * Test on linux
          * check deliverables and re-read the PDF
          *
-         * Features:
-         * Can the start method ease the promise and future workflow (by returning one of them for example) ?
-         *
          */
         
         void start(const TaskID& id) {
