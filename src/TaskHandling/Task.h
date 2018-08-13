@@ -20,6 +20,7 @@
 namespace TaskLib {
     
     using TaskID = int;
+    const auto DEFAULT_TYPE = std::string{"default"};
     
     enum State {
         paused,
@@ -41,47 +42,32 @@ namespace TaskLib {
     class Task {
     
     public:
-        Task(TaskID id) : Task(id, nothingFunction, nothingFunction) {}
+        Task(TaskID id) : Task(id, nothingFunction, nothingFunction, DEFAULT_TYPE) {}
         template<typename F>
-        Task(TaskID id, F&& func) : Task(id, func, nothingFunction) {}
+        Task(TaskID id, F&& func) : Task(id, func, nothingFunction, DEFAULT_TYPE) {}
         template <typename F, typename C>
-        Task(TaskID id, F&& func, C&& callback) :
+        Task(TaskID id, F&& func, C&& callback) : Task(id, func, callback, DEFAULT_TYPE) {}
+        template <typename F, typename C, typename T>
+        Task(TaskID id, F&& func, C&& callback, T type) :
                 m_taskID(id),
                 m_state(STARTING_STATE),
                 m_asyncTask(func),
                 m_callback(callback),
                 m_asyncTaskThread(),
                 m_threadCompleted()
-            {}
+        { setType(std::move(type)); }
         ~Task() {
             if(m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
             if(m_threadCompleted.joinable()) m_threadCompleted.join();
-        }
-    
-        Task(const Task& other) : m_mutex()  {
-            m_taskID = other.m_taskID;
-            m_asyncTask = other.m_asyncTask;
-        
-            m_state = paused;
-            m_asyncTaskThread = std::thread();
-            m_threadCompleted = std::thread();
-        }
-        Task& operator=(Task other) {
-            std::swap(m_taskID, other.m_taskID);
-            std::swap(m_asyncTask, other.m_asyncTask);
-            
-            m_state = STARTING_STATE;
-            m_asyncTaskThread = std::thread();
-            m_threadCompleted = std::thread();
         }
         
         TaskID getID() { return m_taskID; }
         State getState() { return m_state; }
         
         template <typename F>
-        void setAsyncTask(F func) { m_asyncTask = func; }
+        void setAsyncTask(F&& func) { m_asyncTask = func; }
         template <typename C>
-        void setCallback(C cb) { m_callback = cb; }
+        void setCallback(C&& cb) { m_callback = cb; }
         
         void start() {
             if(m_state == paused) {
@@ -121,22 +107,19 @@ namespace TaskLib {
         void join() {
             if (m_asyncTaskThread.joinable()) m_asyncTaskThread.join();
         }
+        void print() {
+            std::cout << m_taskID << ": " << stateToString(m_state)  << " \t- type: ";
+            m_taskType->print(std::cout);
+            std::cout << std::endl;
+        }
         
         template <typename T>
         void setType(T type) { m_taskType = CPP11Helpers::make_unique<Type<T>>(std::move(type)); }
         
-        /**
-         *
-         * Can the start method ease the promise and future workflow (by returning one of them for example) ?
-         *
-         * Test on linux
-         * check deliverables and re-read the PDF
-         *
-         */
         template <typename T, typename F>
-        bool compareType(T type, F&& func) {
+        bool compareType(T comparisonType, F&& compareFunction) {
             auto downcastType = static_cast<Type<T>*>(m_taskType.get());
-            return compareTypes<T>(downcastType, type, func);
+            return compareTypes<T>(downcastType, comparisonType, compareFunction);
         };
     
     private:
@@ -145,6 +128,8 @@ namespace TaskLib {
             auto t1 = static_cast<Type>(taskType->m_type);
             return func(t1, other);
         }
+        
+        std::string stateToString(State s) { return stateNames[s]; }
         
         void atomic_setState(State s) {
             m_mutex.lock();
@@ -164,11 +149,13 @@ namespace TaskLib {
     
         struct ConceptType {
             virtual ~ConceptType() = default;
+            virtual void print(std::ostream&) = 0;
         };
         
         template <typename T>
         struct Type final : ConceptType {
             explicit Type(T x) : m_type(std::move(x)) {}
+            void print(std::ostream& os) override { os << m_type; }
             T m_type;
         };
         

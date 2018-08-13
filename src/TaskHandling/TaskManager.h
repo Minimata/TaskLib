@@ -26,22 +26,27 @@ namespace TaskLib {
         ~TaskManager() = default;
         
         TaskID createTask() {
-            return createTask([](){}, [](){});
+            return createTask([](){}, [](){}, DEFAULT_TYPE);
         }
         template<typename F>
         TaskID createTask(F&& func) {
-            return createTask(func, [](){});
+            return createTask(func, [](){}, DEFAULT_TYPE);
         }
         template <typename F, typename C>
         TaskID createTask(F&& func, C&& callback) {
+            return createTask(func, callback, DEFAULT_TYPE);
+        }
+        template <typename F, typename C, typename T>
+        TaskID createTask(F&& func, C&& callback, T type) {
             // Generate a random and unique ID
             auto taskID = TaskID{rand()};
             while(m_tasks.find(taskID) != m_tasks.end()) taskID = TaskID{rand()};
-    
-            // Store the task right in the map
-            m_tasks.emplace(std::make_pair(taskID, CPP11Helpers::make_unique<Task>(taskID, func, callback)));
+        
+            // Store the task in the map
+            m_tasks.emplace(std::make_pair(taskID, CPP11Helpers::make_unique<Task>(taskID, func, callback, std::move(type))));
             return taskID;
         }
+        
         
         /**
          * TODO
@@ -49,39 +54,40 @@ namespace TaskLib {
          * General:
          * Clean up the example main
          * Test what can be tested
+         * Test on linux
+         * check deliverables and re-read the PDF
          *
          * Features:
-         * User defined Taskclasses and TaskID
-         * Make the start method return a promise
+         * Can the start method ease the promise and future workflow (by returning one of them for example) ?
          *
          */
         
         void start(const TaskID& id) {
-            execute([&id, this](){startTask(m_tasks.at(id));}, id);
+            execute([&id, this](){ m_tasks.at(id)->start(); }, id);
         }
         template <typename F>
         void start(const TaskID& id, F&& func) {
-            execute([&, this](){ startTask(m_tasks.at(id), func); }, id);
+            execute([&, this](){ auto task = m_tasks.at(id); task->setAsyncTask(func); task->start(); }, id);
         }
         template <typename F, typename C>
-        void start(const TaskID& id, F&& func, C&& callback) {
-            execute([&, this](){ startTask(m_tasks.at(id), func, callback); }, id);
+        void start(const TaskID& id, F&& func, C&& cb) {
+            execute([&, this](){ auto task = m_tasks.at(id); task->setAsyncTask(func); task->setCallback(cb); task->start(); }, id);
         }
         
         void pause(const TaskID& id) {
-            execute([&id, this](){pauseTask(m_tasks.at(id));}, id);
+            execute([&id, this](){ m_tasks.at(id)->pause(); }, id);
         }
         void resume(const TaskID& id) {
-            execute([&id, this](){resumeTask(m_tasks.at(id));}, id);
+            execute([&id, this](){ m_tasks.at(id)->resume(); }, id);
         }
         void stop(const TaskID& id) {
-            execute([&id, this](){stopTask(m_tasks.at(id));}, id);
+            execute([&id, this](){ m_tasks.at(id)->stop(); }, id);
         }
         void status(const TaskID& id) {
-            execute([&id, this](){statusTask(m_tasks.at(id));}, id);
+            execute([&id, this](){ m_tasks.at(id)->print(); }, id);
         }
         void join(const TaskID& id) {
-            execute([&id, this](){joinTask(m_tasks.at(id));}, id);
+            execute([&id, this](){ m_tasks.at(id)->join(); }, id);
         }
         void removeTask(const TaskID& id) {
             execute([&id, this](){ stop(id); m_tasks.erase(id); }, id);
@@ -89,11 +95,40 @@ namespace TaskLib {
     
         template<typename F>
         void setAsyncTask(const TaskID& id, F&& func) {
-            execute([&, this](){ setFunctionToTask(m_tasks.at(id), func); }, id);
+            execute([&, this](){ m_tasks.at(id)->setAsyncTask(func); }, id);
         }
         template<typename F>
         void setCallback(const TaskID& id, F&& func) {
-            execute([&, this](){ setCallbackToTask(m_tasks.at(id), func); }, id);
+            execute([&, this](){ m_tasks.at(id)->setCallback(func); }, id);
+        }
+        template<typename T>
+        void setType(const TaskID& id, T type) {
+            execute([&, this](){ m_tasks.at(id)->setType(type); }, id);
+        }
+    
+        template <typename T, typename C>
+        void startTaskOfType(T type, C&& compareFunction) {
+            match(type, [this](std::unique_ptr<Task>& t){ t->start(); }, compareFunction);
+        }
+        template <typename T, typename C>
+        void pauseTaskOfType(T type, C&& compareFunction) {
+            match(type, [this](std::unique_ptr<Task>& t){ t->pause(); }, compareFunction);
+        }
+        template <typename T, typename C>
+        void resumeTaskOfType(T type, C&& compareFunction) {
+            match(type, [this](std::unique_ptr<Task>& t){ t->resume(); }, compareFunction);
+        }
+        template <typename T, typename C>
+        void stopTaskOfType(T type, C&& compareFunction) {
+            match(type, [this](std::unique_ptr<Task>& t){ t->stop(); }, compareFunction);
+        }
+        template <typename T, typename C>
+        void joinTaskOfType(T type, C&& compareFunction) {
+            match(type, [this](std::unique_ptr<Task>& t){ t->join(); }, compareFunction);
+        }
+        template <typename T, typename C>
+        void statusTaskOfType(T type, C&& compareFunction) {
+            match(type, [this](std::unique_ptr<Task>& t){ t->print(); }, compareFunction);
         }
         
         void startAllTasks() {
@@ -109,8 +144,7 @@ namespace TaskLib {
             for (const auto& task : m_tasks) task.second->stop();
         }
         void statusAllTasks() {
-            for (const auto& task : m_tasks)
-                std::cout << task.second->getID() << " : " << stateToString(task.second->getState()) << std::endl;
+            for (const auto& task : m_tasks) task.second->print();
         }
         void joinAllTasks() {
             for (const auto& task : m_tasks) task.second->join();
@@ -122,7 +156,6 @@ namespace TaskLib {
         
     
     private:
-        std::string stateToString(const State& s) { return stateNames[s]; }
     
         template <typename F>
         void execute(F&& func, const TaskID& id) {
@@ -134,48 +167,14 @@ namespace TaskLib {
                 throw std::runtime_error(sstream.str());
             }
         }
-        void startTask(std::unique_ptr<Task>& task) {
-            task->start();
-        }
-        template <typename F>
-        void startTask(std::unique_ptr<Task>& task, F&& func) {
-            task->setAsyncTask(func);
-            task->start();
-        }
-        template <typename F, typename C>
-        void startTask(std::unique_ptr<Task>& task, F&& func, C&& callback) {
-            task->setAsyncTask(func);
-            task->setCallback(callback);
-            task->start();
-        }
-        void stopTask(std::unique_ptr<Task>& task) {
-            task->stop();
-        }
-        void pauseTask(std::unique_ptr<Task>& task) {
-            task->pause();
-        }
-        void resumeTask(std::unique_ptr<Task>& task) {
-            task->resume();
-        }
-        void statusTask(std::unique_ptr<Task>& task) {
-            std::cout << stateToString(task->getState()) << std::endl;
-        }
-        void joinTask(std::unique_ptr<Task>& task) {
-            task->join();
-        }
-    
-        template <typename F>
-        void setFunctionToTask(std::unique_ptr<Task>& task, F&& func) {
-            task->setAsyncTask(func);
-        }
-        template <typename F>
-        void setCallbackToTask(std::unique_ptr<Task>& task, F&& func) {
-            task->setCallback(func);
-        }
         
-        template <typename T>
-        std::unordered_map<TaskID, std::unique_ptr<Task>> match(T type) {
-        
+        template <typename T, typename F, typename C>
+        void match(T type, F&& func, C&& compare) {
+            for(auto& task : m_tasks) {
+                if(task.second->compareType(type, compare)) {
+                    func(task.second);
+                }
+            }
         }
         
         std::unordered_map<TaskID, std::unique_ptr<Task>> m_tasks;

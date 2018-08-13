@@ -46,6 +46,7 @@ namespace TaskLib {
             EXPECT_LE(0, m_taskManager.createTask());
             EXPECT_LE(0, m_taskManager.createTask([](){}));
             EXPECT_LE(0, m_taskManager.createTask([](){}, [](){}));
+            EXPECT_LE(0, m_taskManager.createTask([](){}, [](){}, 42));
         }
     }
 }

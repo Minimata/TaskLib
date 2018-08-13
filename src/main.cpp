@@ -30,6 +30,8 @@ void displayHelp() {
 
 class TaskTester {
 public:
+    TaskTester() : m_i(42), m_j(3.14) {}
+    
     void hello() { std::cout << "Hello from example" << std::endl; }
     void printMembers() { std::cout << "i: " << m_i << ", j: " << m_j << std::endl; }
     template<typename T>
@@ -39,15 +41,23 @@ public:
     float getJ() { return m_j; }
     
     virtual int compare() const { return 42; }
+    friend std::ostream& operator<<(std::ostream& os, const TaskTester& t) {
+        os << 42;
+        return os;
+    }
 
 protected:
-    int m_i = 42;
-    float m_j = 3.14;
+    int m_i;
+    float m_j;
 };
 
 class TaskChildTester : public TaskTester {
 public:
     int compare() const override { return 64; }
+    friend std::ostream& operator<<(std::ostream& os, const TaskChildTester& t) {
+        os << 64;
+        return os;
+    }
 };
 
 
@@ -109,21 +119,19 @@ int main(int argc, char** argv) {
     if( t2.compareType(std::string("hello"), [](std::string s1, std::string s2){ return s1 == s2; }) )
         std::cout << "Should not show" << std::endl;
     
-    auto tester1 = CPP11Helpers::make_unique<TaskTester>();
-    auto tester2 = CPP11Helpers::make_unique<TaskChildTester>();
+    auto id = taskManager.createTask([](){std::cout << "Task1" << std::endl;});
+    taskManager.setType(id, TaskTester());
+    id = taskManager.createTask([](){std::cout << "Task2" << std::endl;});
+    taskManager.setType(id, TaskTester());
+    id = taskManager.createTask([](){std::cout << "Task3" << std::endl;});
+    taskManager.setType(id, TaskChildTester());
     
-    TaskLib::Task t3(3);
-    // t3.setType(CPP11Helpers::make_unique<TaskChildTester>());
-    auto type = CPP11Helpers::make_unique<TaskChildTester>();
-    // t3.setType(type.get());
-    t3.setType(std::move(type));
-    
-    if( t3.compareType(tester1.get(), [](TaskTester* t1, TaskTester* t2){ return t1->compare() == t2->compare(); }))
-        std::cout << "Should not show again" << std::endl;
-    if( t3.compareType(tester2.get(), [](TaskTester* t1, TaskTester* t2){ return t1->compare() == t2->compare(); }))
-        std::cout << "Should show again" << std::endl;
-    
-    
+    taskManager.statusAllTasks();
+    taskManager.startTaskOfType(TaskChildTester(),
+            [](TaskChildTester t1, TaskChildTester t2) {return t1.compare() == t2.compare(); });
+    taskManager.joinAllTasks();
+    taskManager.statusAllTasks();
+    taskManager.removeAllTasks();
     
     auto countdownID = taskManager.createTask([](){
         std::cout << std::endl;
