@@ -5,7 +5,7 @@
 #pragma once
 
 #include "Task.h"
-#include "../Utils/CPP11Helpers.h"
+#include "CPP11Helpers.h"
 
 #include <memory>
 #include <unordered_map>
@@ -46,18 +46,6 @@ namespace TaskLib {
             m_tasks.emplace(std::make_pair(taskID, CPP11Helpers::make_unique<Task>(taskID, func, callback, std::move(type))));
             return taskID;
         }
-        
-        
-        /**
-         * TODO
-         *
-         * General:
-         * Clean up the example main
-         * Test what can be tested
-         * Test on linux
-         * check deliverables and re-read the PDF
-         *
-         */
         
         void start(const TaskID& id) {
             execute([&id, this](){ m_tasks.at(id)->start(); }, id);
@@ -103,25 +91,54 @@ namespace TaskLib {
             execute([&, this](){ m_tasks.at(id)->setType(type); }, id);
         }
     
+        template <typename T>
+        void startTaskOfType(T type) {
+            startTaskOfType(type, [](T t1, T t2){ return t1 == t2; });
+        }
         template <typename T, typename C>
         void startTaskOfType(T type, C&& compareFunction) {
             match(type, [this](std::unique_ptr<Task>& t){ t->start(); }, compareFunction);
+        }
+    
+        template <typename T>
+        void pauseTaskOfType(T type) {
+            pauseTaskOfType(type, [](T t1, T t2){ return t1 == t2; });
         }
         template <typename T, typename C>
         void pauseTaskOfType(T type, C&& compareFunction) {
             match(type, [this](std::unique_ptr<Task>& t){ t->pause(); }, compareFunction);
         }
+    
+        template <typename T>
+        void resumeTaskOfType(T type) {
+            resumeTaskOfType(type, [](T t1, T t2){ return t1 == t2; });
+        }
         template <typename T, typename C>
         void resumeTaskOfType(T type, C&& compareFunction) {
             match(type, [this](std::unique_ptr<Task>& t){ t->resume(); }, compareFunction);
+        }
+        
+        template <typename T>
+        void stopTaskOfType(T type) {
+            stopTaskOfType(type, [](T t1, T t2){ return t1 == t2; });
         }
         template <typename T, typename C>
         void stopTaskOfType(T type, C&& compareFunction) {
             match(type, [this](std::unique_ptr<Task>& t){ t->stop(); }, compareFunction);
         }
+    
+        template <typename T>
+        void joinTaskOfType(T type) {
+            joinTaskOfType(type, [](T t1, T t2){ return t1 == t2; });
+        }
         template <typename T, typename C>
         void joinTaskOfType(T type, C&& compareFunction) {
             match(type, [this](std::unique_ptr<Task>& t){ t->join(); }, compareFunction);
+        }
+    
+        template <typename T>
+        void statusTaskOfType(T type) {
+            statusTaskOfType(type, [](T t1, T t2){ return t1 == t2; });
         }
         template <typename T, typename C>
         void statusTaskOfType(T type, C&& compareFunction) {

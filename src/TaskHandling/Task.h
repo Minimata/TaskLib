@@ -9,7 +9,7 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
-#include "../Utils/CPP11Helpers.h"
+#include "CPP11Helpers.h"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "../../thread/mingw.thread.h"
@@ -37,7 +37,6 @@ namespace TaskLib {
     };
     
     void nothingFunction() {}
-    
     
     class Task {
     
@@ -87,14 +86,6 @@ namespace TaskLib {
                 atomic_setState(stopped);
             }
         }
-        /**
-         * From what I read, it's impossible and not wanted to pause and resume a thread in which we have no access.
-         * If the user wants to pause and resume his threads from another thread, he must use condition variables or
-         * future / promises.
-         * In my case, since I take any function as an argument to give to a thread, I have no way to implement this
-         * pause / resume mechanism without executing all of the function at once.
-         * Hence, the "pause / resume" mechanic is just a stop with a restart.
-         */
         void pause() {
             if(m_state == running) {
                 stop();
@@ -115,7 +106,12 @@ namespace TaskLib {
         
         template <typename T>
         void setType(T type) { m_taskType = CPP11Helpers::make_unique<Type<T>>(std::move(type)); }
-        
+    
+    
+        template <typename T>
+        bool compareType(T comparisonType) {
+            return compareType(comparisonType, [](T t1, T t2){ return t1 == t2; });
+        }
         template <typename T, typename F>
         bool compareType(T comparisonType, F&& compareFunction) {
             auto downcastType = static_cast<Type<T>*>(m_taskType.get());

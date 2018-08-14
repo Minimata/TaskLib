@@ -43,39 +43,6 @@ void displayHelp() {
 }
 
 
-class TaskTester {
-public:
-    TaskTester() : m_i(42), m_j(3.14) {}
-    
-    void hello() { std::cout << "Hello from example" << std::endl; }
-    void printMembers() { std::cout << "i: " << m_i << ", j: " << m_j << std::endl; }
-    template<typename T>
-    void print(T in) { std:: cout << in << std::endl;}
-    
-    int getI() { return m_i; }
-    float getJ() { return m_j; }
-    
-    virtual int compare() const { return 42; }
-    friend std::ostream& operator<<(std::ostream& os, const TaskTester& t) {
-        os << 42;
-        return os;
-    }
-
-protected:
-    int m_i;
-    float m_j;
-};
-
-class TaskChildTester : public TaskTester {
-public:
-    int compare() const override { return 64; }
-    friend std::ostream& operator<<(std::ostream& os, const TaskChildTester& t) {
-        os << 64;
-        return os;
-    }
-};
-
-
 int main(int argc, char** argv) {
     
     // In case of argument
@@ -90,57 +57,7 @@ int main(int argc, char** argv) {
         }
     }
     
-    
     TaskLib::TaskManager taskManager;
-    
-    /**
-    std::string fib = "112358";
-    std::atomic<int> m(0);
-    TaskTester tester;
-    
-    taskManager.createTask([&](){tester.hello();});
-    taskManager.createTask([&](){tester.printMembers();});
-    taskManager.createTask([&](){tester.print(fib);});
-    
-    auto returnValueID = taskManager.createTask([&](){ m.store(tester.getI()); } );
-    std::cout << m << std::endl;
-    taskManager.start(returnValueID);
-    taskManager.join(returnValueID);
-    std::cout << m << std::endl;
-    
-    auto emptyTaskID = taskManager.createTask();
-    taskManager.setAsyncTask(emptyTaskID, [](){ std::cout << "Not so empty anymore... ";});
-    taskManager.setCallback(emptyTaskID, [](){ std::cout << "Is it ?" << std::endl; });
-    taskManager.start(emptyTaskID);
-    
-    auto onStartID = taskManager.createTask();
-    taskManager.start(onStartID,
-            [](){ std::cout << "Function set on start... ";},
-            [](){ std::cout << "And callback too!" << std::endl; } );
-    
-    taskManager.startAllTasks();
-    taskManager.joinAllTasks();
-    taskManager.removeAllTasks();
-    
-    
-    TaskLib::Task t1(1);
-    TaskLib::Task t2(2);
-    t1.setType(std::string("hello"));
-    t2.setType(std::string("goodbye"));
-    
-    if( t1.compareType(std::string("hello"), [](std::string s1, std::string s2){ return s1 == s2; }) )
-        std::cout << "Should show" << std::endl;
-    if( t2.compareType(std::string("hello"), [](std::string s1, std::string s2){ return s1 == s2; }) )
-        std::cout << "Should not show" << std::endl;
-    
-    auto id = taskManager.createTask([](){std::cout << "Task1" << std::endl;});
-    taskManager.setType(id, TaskTester());
-    id = taskManager.createTask([](){std::cout << "Task2" << std::endl;});
-    taskManager.setType(id, TaskTester());
-    id = taskManager.createTask([](){std::cout << "Task3" << std::endl;});
-    taskManager.setType(id, TaskChildTester());
-     
-     */
     
     auto rocketLaunchID = taskManager.createTask([&](){
         std::cout << "\nAll systems are go...\nLiftoff in 30 seconds..." << std::endl;
