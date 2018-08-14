@@ -17,6 +17,8 @@
 
 namespace TaskLib {
     
+    const int MAX_NUMBER_OF_TASKS = 4096;
+    
     class TaskManager {
     
     public:
@@ -38,8 +40,8 @@ namespace TaskLib {
         }
         template <typename F, typename C, typename T>
         TaskID createTask(F&& func, C&& callback, T type) {
-            // Generate a random and unique ID
-            auto taskID = TaskID{rand()};
+            // Generate a random and unique ID small enough to be comfortable to type
+            auto taskID = TaskID{rand() % MAX_NUMBER_OF_TASKS};
             while(m_tasks.find(taskID) != m_tasks.end()) taskID = TaskID{rand()};
         
             // Store the task in the map
