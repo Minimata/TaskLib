@@ -141,8 +141,14 @@ namespace TaskLib {
         std::thread m_asyncTaskThread;
         std::thread m_threadCompleted;
         std::mutex m_mutex;
-    
-    
+        
+        /**
+         * This struct architecture here allows for any user-defined type to be a valid task type, without making the
+         * entire Task class a template.
+         *
+         * Inspired by Sean Parent's talk "Better Code: Runtime Polymorphism" available here
+         * http://sean-parent.stlab.cc/papers-and-presentations/#better-code-runtime-polymorphism
+         */
         struct ConceptType {
             virtual ~ConceptType() = default;
             virtual void print(std::ostream&) = 0;
