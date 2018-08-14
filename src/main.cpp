@@ -17,13 +17,28 @@
 
 
 void displayHelp() {
-    std::cout   << "Welcome to the TaskLib example program !\n\n\n"
-    
-    
+    std::cout   << "\nWelcome to the TaskLib example program !\n\n"
+                
+                << "This example application lets you fiddle with some of the features of this asynchronous task management library.\n"
+                << "A few simple tasks have been set up for you to test, one of them being an infinite loop.\n"
+                << "With the program running, type the following commands in your terminal to manipulate the tasks.\n\n\n"
+                
+                
                 << "\t - help : displays this message.\n"
                 << "\t - quit : detach threads still running and shuts down program.\n\n"
                 
-                << "\t - start : Start to launch a rocket!\n"
+                << "\t - status : prints the status of all the tasks.\n"
+                << "\t - status [integer] : prints the status of the task with the given ID.\n\n"
+                
+                << "\t - start : launches a rocket!\n"
+                << "\t - start [integer] : starts the task with the given ID.\n"
+                << "\t - start [string] : starts all the tasks of the given type.\n\n"
+                
+                << "\t - pause [integer] : pauses the task with the given ID.\n\n"
+                
+                << "\t - resume [integer] : resumes (or restarts) the task with the given ID.\n\n"
+                
+                << "\t - stop [integer] : stops the task with the given ID.\n\n"
                 << std::endl;
 }
 
@@ -106,9 +121,8 @@ int main(int argc, char** argv) {
     taskManager.startAllTasks();
     taskManager.joinAllTasks();
     taskManager.removeAllTasks();
-     
-     */
-     
+    
+    
     TaskLib::Task t1(1);
     TaskLib::Task t2(2);
     t1.setType(std::string("hello"));
@@ -125,27 +139,19 @@ int main(int argc, char** argv) {
     taskManager.setType(id, TaskTester());
     id = taskManager.createTask([](){std::cout << "Task3" << std::endl;});
     taskManager.setType(id, TaskChildTester());
-    
-    taskManager.statusAllTasks();
-    taskManager.startTaskOfType(TaskChildTester(),
-            [](TaskChildTester t1, TaskChildTester t2) {return t1.compare() == t2.compare(); });
-    taskManager.joinAllTasks();
-    taskManager.statusAllTasks();
-    taskManager.removeAllTasks();
-    
-    auto countdownID = taskManager.createTask([](){
-        std::cout << std::endl;
-        int i = 10;
-        while(i > 0) {
-            std::cout << i << std::endl;
-            i--;
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-    }, [](){ std::cout << "Liftoff !" << std::endl; });
+     
+     */
     
     auto rocketLaunchID = taskManager.createTask([&](){
-        std::cout << "\nAll systems are go...\nInitiating countdown" << std::endl;
-    }, [&](){ taskManager.start(countdownID); });
+        std::cout << "\nAll systems are go...\nLiftoff in 30 seconds..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(20));
+        std::cout << "10 seconds left to liftoff..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+    }, [&](){ std::cout << "Liftoff ! To infinity and beyond !" << std::endl; });
+    
+    taskManager.createTask([](){std::cout << "First task of type 'Hello'" << std::endl; }, [](){}, std::string("Hello"));
+    taskManager.createTask([](){std::cout << "Second task of type 'Hello'" << std::endl; }, [](){}, std::string("Hello"));
+    taskManager.createTask([](){std::cout << "Only task of type 'world!'" << std::endl; }, [](){}, std::string("world!"));
     
     auto infiniteLoopID = taskManager.createTask([](){
         while(true) {}
@@ -153,9 +159,9 @@ int main(int argc, char** argv) {
     
     bool canContinue = true;
     std::unordered_map<std::string, std::function<void (int)>> actions = {
-            {"", [](int i){std::cout << std::endl;}},
-            {"help", [&](int i){ displayHelp(); }},
-            {"quit", [&](int i){
+            {"", [](int){std::cout << std::endl;}},
+            {"help", [&](int){ displayHelp(); }},
+            {"quit", [&](int){
                 canContinue = false;
                 std::cout << "Quitting..." << std::endl;
                 taskManager.stopAllTasks();
@@ -210,17 +216,11 @@ int main(int argc, char** argv) {
                     try {
                         taskManager.status(id);
                     }
-                    catch (const std::runtime_error &e) {
+                    catch (const std::runtime_error& e) {
                         std::cerr << e.what() << std::endl;
                     }
                 }
-            }},
-
-            {"startAll", [&](int i){taskManager.startAllTasks();}},
-            {"pauseAll", [&](int i){taskManager.pauseAllTasks();}},
-            {"resumeAll", [&](int i){taskManager.resumeAllTasks();}},
-            {"stopAll", [&](int i){taskManager.stopAllTasks();}},
-            {"joinAll", [&](int i){taskManager.joinAllTasks();}},
+            }}
     };
     
     std::string command;
@@ -238,8 +238,18 @@ int main(int argc, char** argv) {
         // Sets input, if any
         int input = -1;
         if(args.size() > 1) {
-            input = std::stoi(args[1]);
-            command = args[0];
+            command = std::string(args[0]);
+            try {
+                input = std::stoi(args[1]);
+            }
+            catch(const std::invalid_argument& e) {
+                if(command == std::string("start"))
+                    taskManager.startTaskOfType(std::string(args[1]), [](std::string s1, std::string s2){ return s1 == s2; });
+                else {
+                    std::cout << "Invalid command argument" << std::endl;
+                }
+                continue;
+            }
         }
         
         // Launch command, if valid
